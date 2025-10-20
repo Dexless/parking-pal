@@ -3,9 +3,13 @@
 # Swagger API info at: http://127.0.0.1:8000/docs#
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import csv
 
-# Create lot class and use BM for data validation
+#Create FastAPI instance
+app = FastAPI(title="ParkingPal API")
+
+# Create lot class and use BM for data validation (enforce types)
 class Lot(BaseModel):
     lot_id: int
     lot_name: str
@@ -15,10 +19,11 @@ class Lot(BaseModel):
     hours: str
 
 # Parse CSV file and return list of Lot objects
+# format of csv(lot_id,lot_name,total_capacity,current,type,hours)
 def csv_parse(path: str) -> list[Lot]:
     rows: list[Lot] = []
     with open(path, "r", newline="") as f:
-        reader = csv.DictReader(f, skipinitialspace=True)  # trims spaces after commas
+        reader = csv.DictReader(f)
         for r in reader:
             rows.append(
                 Lot(
@@ -32,12 +37,20 @@ def csv_parse(path: str) -> list[Lot]:
             )
     return rows
 
-# Calculate percentage full for a lot using Lot.current and lot.total_capacity
+# Calculate percentage full for a lot using Lot.current and the lot.total_capacity
 def get_percentage_full(lot: Lot) -> float:
     return round((lot.current / lot.total_capacity) * 100, 1)
 
-#Create FastAPI instance
-app = FastAPI(title="ParkingPal API")
+# Middleware allows for react or node.js endpoints to be connected
+# This should allow for end to end connection.
+# front-end should be able to create lot objects from provided data.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load parking lots from CSV and create a dictionary for quick lookup by lot_id
 # This will most likely be replaced by a database in the future
