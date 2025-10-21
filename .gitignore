@@ -1,2 +1,3 @@
 react-test/
-
+__pycache__/
+.venv/
