@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Parking Pals | Home</title>
+    <style>
+        
+        /*map containter*/
+        #map-container {
+            position: relative;
+            display: inline-block;
+            width: 900px;
+            height: 600px;
+            border: 2px solid #000000;
+            overflow: hidden;
+        }
+        /*style for map*/
+        #lot-map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            transform-origin: center center;
+            transition: transform 0.6s ease;
+        }
+
+        /*Clickable areas*/
+        .map-area {
+            position: absolute;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border 0.2s;
+        }
+
+        .map-area:hover{
+            border: 2px solid red;
+        }
+
+        /*rest zoom*/
+        #reset-btn{
+            margin-top: 15px;
+            padding: 8px 16px;
+            border: none;
+            background-color: #000000;
+            color:white;
+            font-size:16px;
+            cursor: pointer;
+        }
+
+        #reset-btn:hover {
+            background-color: #005fa3;
+        }
+
+
+    </style>
+</head>
+<body>
+    <!--Introduing the App-->
+    <div id="top">
+        <h1> Parking Pals</h1>
+        <p>Choose which parking lot you wish to find parking.</p>
+    </div>
+
+    <!--Use the Map-->
+    <div id="map-container">
+        <img id="lot-map"
+             src="https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg"
+             alt="Lotmap" />
+
+        <!--Clickable area?-->
+        <div id="p20" class="map-area" style="left: 220px; top: 130px; width: 80px; height: 60px;"
+             onclick="zoomToArea(260,160,2.2)"></div>
+
+
+    </div>
+    
+</body>
+    </html>
