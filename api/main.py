@@ -93,33 +93,51 @@ lots_by_id = {l.lot_id: l for l in parking_lots}
 async def root():
     return {"message": "Welcome to the ParkingPal API!"}
 
-
+# Returns all lots that match the given filters
+# Filters by optional name/ID search and lot type
+# Sorts by percent full or name (asc/desc)
+# Converts full lot data to summarized form before returning
 @app.get("/lots", response_model=List[LotSummary])
 def list_lots(
-    q: Optional[str] = Query(None, description="Search by name or ID"),
-    lot_type: Optional[str] = Query(None, description="student|faculty|visitor"),
-    sort: str = Query("percent_full", description="percent_full|lot_name|-percent_full|-lot_name"),
+    search_query: Optional[str] = Query(None, description="Search by name or ID"),
+    lot_category: Optional[str] = Query(None, description="student|faculty|visitor"),
+    sort_option: str = Query("percent_full", description="percent_full|lot_name|-percent_full|-lot_name"),
 ):
-    def match(l: Lot) -> bool:
-        if lot_type and l.type.lower() != lot_type.lower():
+    def lot_matches(lot: Lot) -> bool:
+        if lot_category and lot.type.lower() != lot_category.lower():
             return False
-        if q:
-            if q.isdigit() and int(q) == l.lot_id:
+        if search_query:
+            if search_query.isdigit() and int(search_query) == lot.lot_id:
                 return True
-            if q.lower() not in l.lot_name.lower():
+            if search_query.lower() not in lot.lot_name.lower():
                 return False
         return True
 
-    filtered = [l for l in parking_lots if match(l)]
+    matching_lots = []
+    for lot in parking_lots:
+        if lot_matches(lot):
+            matching_lots.append(lot)
 
-    key = sort.lstrip("-")
-    reverse = sort.startswith("-")
-    def keyfn(l: Lot):
-        return percent_full(l) if key == "percent_full" else l.lot_name.lower()
-    filtered.sort(key=keyfn, reverse=reverse)
+    sort_field = sort_option.lstrip("-")
+    descending_order = sort_option.startswith("-")
 
-    return [to_summary(l) for l in filtered]
+    def sort_key_function(lot: Lot):
+        if sort_field == "percent_full":
+            return percent_full(lot)
+        else:
+            return lot.lot_name.lower()
 
+    matching_lots.sort(key=sort_key_function, reverse=descending_order)
+
+    summarized_lots = []
+    for lot in matching_lots:
+        summarized_lot = to_summary(lot)
+        summarized_lots.append(summarized_lot)
+
+    return summarized_lots
+
+
+# Get lot by ID
 @app.get("/lots/{lot_id}", response_model=LotSummary)
 def get_lot(lot_id: int):
     lot = lots_by_id.get(lot_id)
