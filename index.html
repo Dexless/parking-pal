@@ -1,0 +1,73 @@
+ <!DOCTYPE html> 
+ <html lang="en"> 
+    <head> 
+        <meta charset="UTF-8"> 
+        <meta name="viewport" content ="width=device-width, initial-scale=1.0" />
+        <title>ParkingPal Langauge Selector </title> 
+        <style> 
+            body { 
+                font-family: Arial, sans-serif; 
+                padding: 2rem; 
+            } 
+            label { 
+                font-weight:bold;
+            }
+            select {
+                margin-top: 0.5rem;
+                font-size: 1rem;
+            }
+            .localized{
+                margin-top: 2rem;
+                font-size: 1.2rem;
+            }
+</style>
+</head>
+<body>
+<h1>Choose Your Language</h1>
+  <form id="language-form">
+    <label for="language-select">Language:</label><br />
+    <select id="language-select" name="language">
+      <option value="en">English</option>
+      <option value="es">Spanish</option>
+    </select>
+  </form>
+
+
+<div class="localized" id="localized-content">
+    <!-- This content will change based on language -->
+    Welcome to ParkingPal!
+  </div>
+
+<script>
+    // ChangeLanguage Object
+    const ChangeLanguage = {
+      currLanguage: "English",
+      availLanguages: ["English", "Spanish"],
+      translations: {
+        English: {
+          welcome: "Welcome to ParkingPal!",
+        },
+        Spanish: {
+          welcome: "¡Bienvenido a ParkingPal!",
+        }
+      },
+      onClick: function () {
+        const selected = document.getElementById("language-select").value;
+        this.switchLanguage(selected);
+      },
+      switchLanguage: function (languageCode) {
+        this.currLanguage = languageCode === "en" ? "English" : "Spanish";
+        document.getElementById("localized-content").textContent =
+          this.translations[this.currLanguage].welcome;
+      }
+    };
+    // Event listener
+    document.getElementById("language-select").addEventListener("change", function () {
+      ChangeLanguage.onClick();
+    });
+    // Initialize with default language
+    ChangeLanguage.switchLanguage("en");  
+    </script>
+</body>
+</html>
+       
