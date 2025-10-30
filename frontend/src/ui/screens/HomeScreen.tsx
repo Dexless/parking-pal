@@ -18,7 +18,7 @@ export default function HomeScreen({ navigation }: Props) {
     </View>
   );
 }
-
+ 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
   title: { fontSize: 28, fontWeight: '700', color: '#1E40AF' },
