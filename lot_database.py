@@ -1,53 +1,57 @@
 import psycopg2
 import psycopg2.extras
 from random import random
-from lot_dict import lot_dict
+from random import randint
+import lot_helper as lh
 import datetime
 import os
 
-# Do NOT publically post password to public GitHub
-DB_NAME = os.getenv("DB_NAME", "parkingpal_db")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASS = os.getenv("DB_PASS", "parking-pal")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
-
-def establish_connection():
-    connection = psycopg2.connect(
-        dbname = DB_NAME,
-        dbuser = DB_USER,
-        dbpass = DB_PASS,
-        dbhost = DB_HOST,
-        dbport = DB_PORT,
-    )
-
-    return connection
 
 def fetch_all_lots():
-    connection = establish_connection()
-
     # Establish a cursor in the db, cursor is akin to a pointer
     # This cursor will be used to execute SQL queries
+    connection = lh.establish_connection()
     cursor = connection.cursor()
 
-    cursor.execute("SELECT * FROM lots;")           # Execute SQL Query
+    cursor.execute("SELECT * FROM lots;")   # Execute SQL Query
     rows = cursor.fetchall()
     
-    cursor.close()                                  # Close endpoints
+    #connection.commit() # Not needed for non-modified queries
+    cursor.close()    # Close endpoints
     connection.close()
 
     # Construct a dict from data_type and row tuples
-    data_type = ["lot_id", "lot_name", "total_capacity", "current_type", "hours"]
+    data_type = ["lot_id", "lot_name", "total_capacity", "current_type", "type", "hours"]
     joined_data = []
     
     for tups in rows:
-        temp_dict.clear()
-        for x in range(0, len(tups)):
-            temp_dict = {}
+        temp_dict = {}
+        for x in range(len(tups)):
             temp_dict[data_type[x]] = tups[x]
         joined_data.append(temp_dict)
 
     return joined_data
+
+def fetch_lot_by_id(lot_id: int):
+    connection = lh.establish_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM lots WHERE lot_id = %s;", (lot_id,))
+    row = cursor.fetchone()
+    
+    cursor.close()
+    connection.close()
+
+    if row is None:
+        return None
+
+    data_type = ["lot_id", "lot_name", "total_capacity", "current", "type", "hours"]
+    lot_data = {}
+    
+    for x in range(0, len(row)):
+        lot_data[data_type[x]] = row[x]
+
+    return lot_data
 
 def rand_capacity():
     return int(random() * 500) + 50
@@ -55,9 +59,9 @@ def rand_capacity():
 def rand_current(capacity: int):
     return int(random() * capacity)
 
-# lot_id | lot_name | total_capacity | current |  type   |  hours
+# lot_id|lot_name|total_capacity|current|type|hours
 def randomize_Lot_Data(num_lots: int):
-    connection = establish_connection()
+    connection = lh.establish_connection()
     cursor = connection.cursor()
 
     cursor.execute("SELECT * FROM lots ORDER BY lot_id DESC LIMIT 1")
@@ -67,7 +71,7 @@ def randomize_Lot_Data(num_lots: int):
         lot_id = prev_row+1
         prev_row += 1
 
-        lot_name = 'P' + f'{str(random.randint(0,10))}'
+        lot_name = 'P' + f'{str(randint(0,10))}'
         total_capacity = rand_capacity()
         current = rand_current(total_capacity)
 
@@ -84,3 +88,13 @@ def randomize_Lot_Data(num_lots: int):
     cursor.close()
     connection.close()
     return
+
+def runFullTest():
+    randomize_Lot_Data(5)
+    print(fetch_all_lots())
+    print(fetch_lot_by_id(1))
+    pass
+
+
+if __name__ == "__main__":
+    runFullTest()

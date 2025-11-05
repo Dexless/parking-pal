@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Literal
 from datetime import datetime
+from lot_database import fetch_all_lots, fetch_lot_by_id
+from lot_helper import lot_dict
 import csv, random
 
 app = FastAPI(title="ParkingPal API")
