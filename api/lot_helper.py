@@ -1,9 +1,33 @@
 # Returns a dict of key value pairs corresponding with lot_id and lot_name
 import psycopg2
+from pydantic import BaseModel
+from typing import Literal
+
+# Enforce types with BModels
+class Lot(BaseModel):
+    lot_id: int
+    lot_name: str
+    total_capacity: int
+    current: int
+    type: str          
+    hours: str
+
+# Expose model with computed fields
+class LotSummary(BaseModel):
+    lot_id: int
+    lot_name: str
+    total_capacity: int
+    current: int
+    percent_full: float
+    state: Literal["EMPTY","LIGHT","MEDIUM","HEAVY","FULL"]
+    type: str
+    hours: str
 
 def lot_dict():
     lot_dict = {0: "P1", 1: "P2", 2: "P3", 3: "P5", 4: "P6", 5: "P9", 6: "P10", 7: "P11", 8: "P13", 9: "P15", 10: "P20", 11: "P27"}
     return lot_dict
+
+
 
 # Do NOT publically post password to public GitHub
 class DB_Credentials:
@@ -29,7 +53,7 @@ def clearTable(table: str):
     connection = establish_connection()
     cursor = connection.cursor()
 
-    cursor.execute("TRUNCATE TABLE %s;", (table))
+    cursor.execute("TRUNCATE TABLE %s;", (table,))
     connection.commit()
 
     cursor.close()
