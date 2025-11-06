@@ -110,16 +110,3 @@ def randomize_Lot_Data(lot_id: int, all_lots = False):
     cursor.close()
     connection.close()
     return
-
-def runFullTest():
-    printTableContents()
-    randomize_Lot_Data(5)
-    print("After Randomization:")
-    printTableContents()
-    print()
-
-    pass
-
-
-if __name__ == "__main__":
-    runFullTest()
