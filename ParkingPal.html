@@ -1,146 +1,187 @@
 ﻿<!DOCTYPE html>
-
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <title>Parking Pals | Home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-
-        /* map containter */
-        #map-container {
-            position: relative; 
-            display: inline-block;
-            width: 900px;
-            height: 600px;
-            border: 2px solid #000000;
-            overflow: hidden;
+        :root {
+            --bg: #0f172a;
+            --card: #111827;
+            --muted: #94a3b8;
+            --text: #e5e7eb;
+            --accent: #22c55e;
+            --accent-2: #60a5fa;
+            --danger: #ef4444;
+            --ring: rgba(96,165,250,.35);
         }
 
-        /* style for map */
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+            color: var(--text);
+            background: radial-gradient(1200px 600px at 20% -10%, #1f2937 0%, var(--bg) 45%) no-repeat, var(--bg);
+        }
+
+        header {
+            max-width: 1100px;
+            margin: 28px auto 12px;
+            padding: 0 16px;
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            font-size: clamp(24px, 3vw, 36px);
+        }
+
+        p {
+            margin: 0;
+            color: var(--muted)
+        }
+
+        .card {
+            max-width: 1100px;
+            margin: 16px auto;
+            padding: 18px;
+            border: 1px solid #334155;
+            border-radius: 18px;
+            background: linear-gradient(180deg,#0b1220,#0b1220cc);
+            box-shadow: 0 10px 30px rgba(15,23,42,.45), inset 0 1px 0 rgba(255,255,255,.02);
+        }
+
+        #map-wrap {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden
+        }
+
         #lot-map {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 900px;
-            height: 600px;
-            transform-origin: center center;
-            transition: transform 0.6s ease;
+            display: block;
+            width: 100%;
+            height: auto
         }
 
-        /* Clickable areas */
         .map-area {
             position: absolute;
-            z-index: 10;
-            border: 2px solid transparent;
+            z-index: 2;
+            border: 2px solid rgba(255,255,255,.4);
+            border-radius: 8px;
             cursor: pointer;
-            transition: border 0.2s;
+            transition: box-shadow .2s, border-color .2s, background .2s;
+            background: rgba(255,255,255,0.02);
         }
 
             .map-area:hover {
-                border: 2px solid red;
+                border-color: var(--accent-2);
+                box-shadow: 0 0 0 6px var(--ring), 0 6px 18px rgba(2,132,199,.35);
+                background: rgba(96,165,250,0.08);
             }
 
-        /*rest zoom*/
-        #reset-btn{
-            margin-top: 15px;
-            padding: 8px 16px;
-            border: none;
-            background-color: #000000;
-            color:white;
-            font-size:16px;
+            .map-area::after {
+                content: attr(data-lot);
+                position: absolute;
+                top: -30px;
+                left: 0;
+                transform: translateY(-6px);
+                padding: 4px 8px;
+                border-radius: 999px;
+                font-size: 12px;
+                white-space: nowrap;
+                background: #0b1220;
+                color: #e2e8f0;
+                border: 1px solid #334155;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity .15s, transform .15s;
+            }
+
+            .map-area:hover::after {
+                opacity: 1;
+                transform: translateY(0)
+            }
+
+        #reset-btn {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            background: #0b1220;
+            color: #e2e8f0;
             cursor: pointer;
         }
 
-        #reset-btn:hover {
-            background-color: #005fa3;
+            #reset-btn:hover {
+                border-color: #475569
+            }
+
+        .map-aspect {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: auto;
+            aspect-ratio: 900 / 600;
         }
 
-
+            .map-aspect > img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
     </style>
 </head>
 <body>
-    <!--Introduing the App-->
-    <div id="top">
-        <h1> Parking Pals</h1>
-        <p>Choose which parking lot you wish to find parking.</p>
-    </div>
+    <header>
+        <h1>Parking Pals</h1>
+        <p>Tap a lot to see availability and details.</p>
+    </header>
 
-    <!--Use the Map-->
-    
-    <div id="map-container">
-        <div id="map-content">
-            <img id="lot-map"
-                 src="https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg"
-                 alt="Lotmap" />
+    <main class="card">
+        <div id="map-wrap">
+            <div class="map-aspect">
+                <img id="lot-map" src="campusmap.jpg" alt="Campus Parking Map" />
 
-            <div class="map-area"
-                 data-lot="P20"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 79px; left: 246px; width: 156px; height: 55px;">
+
+
+                <!-- P20 -->
+                <div class="map-area" data-lot="P20"
+                     onclick="location.href='P20.html'"
+                     style="top: calc(49/600*100%); left: calc(157/900*100%);
+                    width: calc(176/900*100%); height: calc(65/600*100%);"></div>
+
+                <!-- P15 -->
+                <div class="map-area" data-lot="P15"
+                     onclick="location.href='P15.html'"
+                     style="top: calc(125/600*100%); left: calc(470/900*100%);
+                    width: calc(20/900*100%); height: calc(77/600*100%);"></div>
+
+                <!-- P3 -->
+                <div class="map-area" data-lot="P3"
+                     onclick="location.href='P3.html'"
+                     style="top: calc(391/600*100%); left: calc(660/900*100%);
+                    width: calc(15/900*100%); height: calc(75/600*100%);"></div>
+
+                <!-- P5 / P6 -->
+                <div class="map-area" data-lot="P5 / P6"
+                     onclick="location.href='P5-6.html'"
+                     style="top: calc(184/600*100%); left: calc(587/900*100%);
+                    width: calc(60/900*100%); height: calc(177/600*100%);"></div>
+
+                <!-- P1 / P2 -->
+                <div class="map-area" data-lot="P1 / P2"
+                     onclick="location.href='P1-2.html'"
+                     style="top: calc(370/600*100%); left: calc(505/900*100%);
+                    width: calc(143/900*100%); height: calc(92/600*100%);"></div>
+
             </div>
-
-            <div class="map-area"
-                 data-lot="P11"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 110px; left: 652px; width: 52px; height: 25px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P10"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 100px; left: 750px; width: 12px; height: 25px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P9"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 145px; left: 725px; width: 50px; height: 35px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P15"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 145px; left: 490px; width: 15px; height: 65px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P27"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 349px; left: 180px; width: 50px; height: 84px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P26"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 257px; left: 65px; width: 50px; height: 23px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P3"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 371px; left: 630px; width: 15px; height: 65px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P5/P6"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 195px; left: 575px; width: 45px; height: 150px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P1/P2"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 355px; left: 495px; width: 125px; height: 80px;">
-            </div>
-
-            <div class="map-area"
-                 data-lot="P13"
-                 onclick="window.location.href='https://pbs.twimg.com/media/DnaM_G2VYAAnUXs.jpg'"
-                 style="top: 140px; left: 532px; width: 17px; height: 8px;">
-            </div>
-
         </div>
-</div>
 
+        <button id="reset-btn" onclick="scrollTo({top:0, behavior:'smooth'})">Reset View</button>
+    </main>
 </body>
-    </html>
+</html>
