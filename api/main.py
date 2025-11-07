@@ -2,17 +2,11 @@
 # Swagger: http://127.0.0.1:8000/docs
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from datetime import datetime
 from typing import List, Optional
 import lot_helper as lh
 import lot_database as ldb
 
 app = FastAPI(title="ParkingPal API")
-
-# compute percent full
-def percent_full(lot: lh.Lot) -> float:
-    return round((lot.current / lot.total_capacity) * 100.0, 1) if lot.total_capacity else 0.0
 
 # compute crowd state
 def full_type(p: float) -> str:
@@ -24,7 +18,7 @@ def full_type(p: float) -> str:
 
 # Create LotSummary from Lot
 def to_summary(obj: lh.Lot) -> lh.LotSummary:
-    pf = percent_full(obj)
+    pf = int((obj.current / obj.total_capacity) * 100)
     return lh.LotSummary(
         lot_id=obj.lot_id,
         lot_name=obj.lot_name,
@@ -84,7 +78,7 @@ def list_lots(
 
     def sort_key_function(lot: lh.Lot):
         if sort_field == "percent_full":
-            return percent_full(lot)
+            return int((lot.current / lot.total_capacity) * 100)
         else:
             return lot.lot_name.lower()
 
@@ -101,27 +95,8 @@ def list_lots(
 # Get lot by ID
 @app.get("/lots/{lot_id}", response_model=lh.LotSummary)
 def get_lot(lot_id: int):
+    print("Fetching lot ID:", lot_id)
     lot = ldb.fetch_lot_by_id(lot_id)
     if not lot:
         raise HTTPException(status_code=404, detail="Lot not found")
     return to_summary(lot)
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
-
-    # Test DB connection
-    connection = lh.establish_connection()
-    print("Database connection established:", connection is not None)
-    connection.close()
-
-    # Test fetching all lots
-    lots = lh.fetch_all_lots()
-    print("Fetched lots from database:")
-    for lot in lots:
-        print(lot)
-
-    # Test fetching a specific lot by ID
-    lot = lh.fetch_lot_by_id(1)
-    print("Fetched lot with ID 1:", lot)

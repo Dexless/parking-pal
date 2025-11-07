@@ -12,6 +12,10 @@ class Lot(BaseModel):
     type: str          
     hours: str
 
+    # Print lot object nicely
+    def __print__ (self):
+        return f"Lot ID: {self.lot_id}, Lot Name: {self.lot_name}, Total Capacity: {self.total_capacity}, Current: {self.current}, Type: {self.type}, Hours: {self.hours}"
+
 # Expose model with computed fields
 class LotSummary(BaseModel):
     lot_id: int

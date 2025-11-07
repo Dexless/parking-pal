@@ -1,10 +1,5 @@
-import psycopg2
-import psycopg2.extras
 from random import random
-from random import randint
 import lot_helper as lh
-import datetime
-import os
 
 def printTableContents():
     connection = lh.establish_connection()
@@ -54,7 +49,7 @@ def fetch_all_lots():
 
     return joined_data
 
-def fetch_lot_by_id(lot_id: int):
+def fetch_lot_by_id(lot_id: int) -> lh.Lot:
     connection = lh.establish_connection()
     cursor = connection.cursor()
 
@@ -68,13 +63,16 @@ def fetch_lot_by_id(lot_id: int):
     if row is None:
         return None
 
-    data_type = ["lot_id", "lot_name", "total_capacity", "current", "type", "hours"]
-    lot_data = {}
-    
-    for x in range(0, len(row)):
-        lot_data[data_type[x]] = row[x]
+    lot = lh.Lot(
+    lot_id = row[0],
+    lot_name = row[1],
+    total_capacity = row[2],
+    current = row[3],
+    type = row[4],      
+    hours = row[5]
+    )
 
-    return lot_data
+    return lot
 
 def rand_capacity():
     return int(random() * 500) + 50
