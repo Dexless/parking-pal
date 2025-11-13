@@ -69,7 +69,7 @@ def progress_time(dt: datetime, tails = 0.05) -> datetime:
     future_date = dt + timedelta(minutes=skew)
     return future_date
 
-def fab_vehicle_entry():
+def fab_vehicle_entry(days_simulated = 1):
     connection = conn
     cursor = connection.cursor()
 
@@ -106,6 +106,7 @@ def fab_vehicle_entry():
         time = time.replace(hour = START_TIME)
     elif(time.hour() > END_TIME):
         time = time.replace(day = (time.day()+1),hour = START_TIME)
+        days_simulated -= days_simulated
 
         
     is_entering = randint(0,1)
@@ -113,7 +114,7 @@ def fab_vehicle_entry():
 
     v = Vehicle(dt = time, is_entering = is_entering, lot_id= lot_id)
     insert_vehicle_entry(v)
-    return
+    return days_simulated
 
 # def simulate_day():
     
