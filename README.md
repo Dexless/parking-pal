@@ -15,3 +15,19 @@ Parking Pal is a comprehensive parking application to systematically store infor
 - Create fabricated data to test.
 
 Notes: Scrum cycle 1 had a good linear progression. Our goals for end to end connection of the API and frontend layer was achievable within the timeframe, each component was developed and works in tandem with one another. Our group could benefit from clearer goals and deliniation of tasks for each user. Next scrum cycle will be heavy on developing the front end and start the building of the database which will allow us to further the fabrication of data via automated means. A more thurough set of goals is to be outlined with every group member. 
+
+### Scrum Cycle 2:
+
+- Database
+    - Start work on the database using postgressSQL
+    - Implement the ability to store all assets on the database
+    - Implement the ability to store all lot ADT on the database
+    - Add the ability to automatically fabricate data from the database
+- Make sure the adequate data is stored on the database
+    - how many cars are there, how many spaces are left, time stamps
+- Improve map
+    - Make home page visually appealing
+    - Start structuring out what the user would be able to see when clicked on
+        - create template for next page, get ready for integration
+
+Notes: Scrum cycle 2 made furthering attempts to get the entire infrastructure of the project complete. By now the project has a working API and database layer and automatic generation of fabricated data using a Discrete Event Simulation approach. Frontend work has proven fruitful in producing a user experience that is not only easily manageable but also visually appealing. Final work in cycle 3 will attempt to layer the program in such a way that a prototype allows for seamless viewing of lot information for the user on a per-lot basis. The team is confident that the integration of all components will be achieved smoothly given the modular architecture established in previous cycles.
