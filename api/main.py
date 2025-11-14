@@ -1,5 +1,6 @@
 # Run: fastapi dev main.py
 # Swagger: http://127.0.0.1:8000/docs
+from asyncio import sleep
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
@@ -95,7 +96,7 @@ def list_lots(
 
 # Get lot by ID
 @app.get("/lots/{lot_id}", response_model=lh.LotSummary)
-def get_lot(lot_id: int):
+async def get_lot(lot_id: int):
     print("Fetching lot ID:", lot_id)
     lot = ldb.fetch_lot_by_id(lot_id)
     if not lot:
@@ -103,16 +104,18 @@ def get_lot(lot_id: int):
     return to_summary(lot)
 
 # Impliment an endpoint to manually generate an n number of events and update lots and events table and return both table's entries (all lots and 10 events)
-@app.post("/update_lot/{lot_id}", response_model=lh.LotSummary)
-def update_lot(lot_id: int, num_events: int):
-    ddb.fab_vehicle_entry(lot_id)
-    
+@app.post("/random_lot_event/{lot_id}", response_model=lh.LotSummary)
+async def random_lot_event(lot_id: int, num_events: int):
+
     lot = ldb.fetch_lot_by_id(lot_id)
+    # print("Initial Fetched lot:", lot)
+
     if not lot:
         raise HTTPException(status_code=404, detail="Lot not found")
 
     for _ in range(num_events):
         ddb.fab_vehicle_entry(lot_id)
+        updated_lot = ldb.fetch_lot_by_id(lot_id)
+        # print("Updated lot:", updated_lot)
 
-    updated_lot = ldb.fetch_lot_by_id(lot_id)
     return to_summary(updated_lot)

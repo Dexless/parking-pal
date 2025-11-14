@@ -88,7 +88,27 @@ def progress_time(dt: datetime, tails = 0.05) -> datetime:
         future_date = future_date.replace(day=future_date.day + 1, hour=START_TIME, minute=0, second=0, microsecond=0)
     return future_date
 
-def fab_vehicle_entry():
+def randomizeIsEntering(lot_id: int) -> bool:
+    lot = ldb.fetch_lot_by_id(lot_id)
+    lot_full_percent = int((lot.current / lot.total_capacity) * 100)
+    cf = random.random()
+
+    print(f"Lot ID: {lot_id}, Current: {lot.current}, Capacity: {lot.total_capacity}, Full%: {lot_full_percent}, Random CF: {cf}")
+
+
+    if lot_full_percent <= 80:
+        if cf < 0.9:    #Growing
+            return True
+        else:
+            return False
+    else:
+        if cf < 0.1:    #Shrinking
+            return True
+        else:
+            return False
+    return random.choice([True, False])
+
+def fab_vehicle_entry(input_lot: int = -1):
     connection = lh.establish_connection()
     cursor = connection.cursor()
 
@@ -107,8 +127,8 @@ def fab_vehicle_entry():
             time = (time + timedelta(days=1)).replace(
                 hour=START_TIME, minute=0, second=0, microsecond=0)
 
-        is_entering = random.randint(0,1)
-        lot_id = random.choice(list(lh.lot_dict().keys()))
+        is_entering = randomizeIsEntering(input_lot)
+        lot_id = input_lot
 
         v = Vehicle(dt = time, is_entering = is_entering, lot_id= lot_id)
         insert_vehicle_entry(v)
@@ -122,10 +142,10 @@ def fab_vehicle_entry():
 
     time = progress_time(recent_dt)
 
-    is_entering = random.randint(0,1)
+    is_entering = randomizeIsEntering(input_lot)
     lot_id = random.randint(0,10)
 
-    v = Vehicle(dt = time, is_entering = is_entering, lot_id= lot_id)
+    v = Vehicle(dt = time, is_entering = is_entering, lot_id= input_lot)
     insert_vehicle_entry(v)
 
     cursor.close()

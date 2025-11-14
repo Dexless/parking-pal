@@ -1,7 +1,6 @@
 import psycopg2
 from pydantic import BaseModel
 from typing import Literal
-import lot_database as ldb
 
 # Enforce types with BModels
 class Lot(BaseModel):
@@ -33,6 +32,7 @@ def lot_dict():
     return lot_dict
 
 def update_lots_current(is_entering: bool, lot_id: int):
+    import lot_database as ldb
     connection = establish_connection()
     cursor = connection.cursor()
 

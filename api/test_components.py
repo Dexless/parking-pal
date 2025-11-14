@@ -22,6 +22,7 @@ def testLotDB():
         lot = ldb.fetch_lot_by_id(x)
         print(lot)
     print("Successful Fetch of Each Lot by ID")
+    print()
     ldb.printTableContents()
     print()
 
