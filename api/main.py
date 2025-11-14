@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 import lot_helper as lh
 import lot_database as ldb
+import detection_database as ddb
 
 app = FastAPI(title="ParkingPal API")
 
@@ -100,3 +101,18 @@ def get_lot(lot_id: int):
     if not lot:
         raise HTTPException(status_code=404, detail="Lot not found")
     return to_summary(lot)
+
+# Impliment an endpoint to manually generate an n number of events and update lots and events table and return both table's entries (all lots and 10 events)
+@app.post("/update_lot/{lot_id}", response_model=lh.LotSummary)
+def update_lot(lot_id: int, num_events: int):
+    ddb.fab_vehicle_entry(lot_id)
+    
+    lot = ldb.fetch_lot_by_id(lot_id)
+    if not lot:
+        raise HTTPException(status_code=404, detail="Lot not found")
+
+    for _ in range(num_events):
+        ddb.fab_vehicle_entry(lot_id)
+
+    updated_lot = ldb.fetch_lot_by_id(lot_id)
+    return to_summary(updated_lot)

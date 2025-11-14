@@ -1,6 +1,7 @@
 import psycopg2
 from pydantic import BaseModel
 from typing import Literal
+import lot_database as ldb
 
 # Enforce types with BModels
 class Lot(BaseModel):
@@ -31,6 +32,30 @@ def lot_dict():
     lot_dict = {0: "P1", 1: "P2", 2: "P3", 3: "P5", 4: "P6", 5: "P9", 6: "P10", 7: "P11", 8: "P13", 9: "P15", 10: "P20", 11: "P27"}
     return lot_dict
 
+def update_lots_current(is_entering: bool, lot_id: int):
+    connection = establish_connection()
+    cursor = connection.cursor()
+
+    # Check if updating would exceed capacity or go below 0
+    lot = ldb.fetch_lot_by_id(lot_id)
+    total_capacity = lot.total_capacity
+    current = lot.current
+    if is_entering and (current + 1) > total_capacity:
+        print("Error lot_capacity can not exceed total capacity.")
+        return
+    if not is_entering and (current - 1) < 0:
+        print("Error lot_capacity can not be less than 0.")
+        return
+
+    if is_entering:
+        cursor.execute(f"UPDATE lots SET current = current + 1 WHERE lot_id = {lot_id};")
+    else:
+        cursor.execute(f"UPDATE lots SET current = current - 1 WHERE lot_id = {lot_id};")
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
 
 
 # Do NOT publically post password to public GitHub
@@ -57,7 +82,7 @@ def clearTable(table: str):
     connection = establish_connection()
     cursor = connection.cursor()
 
-    cursor.execute("TRUNCATE TABLE %s;", (table,))
+    cursor.execute(f"TRUNCATE TABLE {table};")
     connection.commit()
 
     cursor.close()

@@ -74,6 +74,31 @@ def fetch_lot_by_id(lot_id: int) -> lh.Lot:
 
     return lot
 
+def fetch_lot_by_name(lot_name: str) -> lh.Lot:
+    connection = lh.establish_connection()
+    cursor = connection.cursor()
+
+    # For some reason lot_id requires , even though it's a single param
+    cursor.execute("SELECT * FROM lots WHERE lot_name = %s;", (lot_name,))
+    row = cursor.fetchone()
+    
+    cursor.close()
+    connection.close()
+
+    if row is None:
+        return None
+
+    lot = lh.Lot(
+    lot_id = row[0],
+    lot_name = row[1],
+    total_capacity = row[2],
+    current = row[3],
+    type = row[4],      
+    hours = row[5]
+    )
+
+    return lot
+
 def rand_capacity():
     return int(random() * 500) + 50
 
