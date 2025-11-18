@@ -1,55 +1,16 @@
 # Run: fastapi dev main.py
 # Swagger: http://127.0.0.1:8000/docs
+from asyncio import sleep
+import datetime
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List, Literal
-from datetime import datetime
-import csv, random
+from typing import List, Optional
+import lot_helper as lh
+import lot_database as ldb
+import detection_database as ddb
+import pin_database as pdb
 
 app = FastAPI(title="ParkingPal API")
-
-# Enforce types with BModels
-class Lot(BaseModel):
-    lot_id: int
-    lot_name: str
-    total_capacity: int
-    current: int
-    type: str          
-    hours: str
-
-# Expose model with computed fields
-class LotSummary(BaseModel):
-    lot_id: int
-    lot_name: str
-    total_capacity: int
-    current: int
-    percent_full: float
-    state: Literal["EMPTY","LIGHT","MEDIUM","HEAVY","FULL"]
-    type: str
-    hours: str
-
-# parse CSV data into Lot objects
-def csv_parse(path: str) -> list[Lot]:
-    rows: list[Lot] = []
-    with open(path, "r", newline="") as f:
-        reader = csv.DictReader(f, skipinitialspace=True)
-        for r in reader:
-            rows.append(
-                Lot(
-                    lot_id=int(r["lot_id"]),
-                    lot_name=r["lot_name"],
-                    total_capacity=int(r["total_capacity"]),
-                    current=int(r["current"]),
-                    type=r["type"],
-                    hours=r["hours"],
-                )
-            )
-    return rows
-
-# compute percent full
-def percent_full(lot: Lot) -> float:
-    return round((lot.current / lot.total_capacity) * 100.0, 1) if lot.total_capacity else 0.0
 
 # compute crowd state
 def full_type(p: float) -> str:
@@ -60,9 +21,9 @@ def full_type(p: float) -> str:
     return "FULL"
 
 # Create LotSummary from Lot
-def to_summary(obj: Lot) -> LotSummary:
-    pf = percent_full(obj)
-    return LotSummary(
+def to_summary(obj: lh.Lot) -> lh.LotSummary:
+    pf = int((obj.current / obj.total_capacity) * 100)
+    return lh.LotSummary(
         lot_id=obj.lot_id,
         lot_name=obj.lot_name,
         total_capacity=obj.total_capacity,
@@ -85,10 +46,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# CSV columns: lot_id,lot_name,total_capacity,current,type,hours
-parking_lots: list[Lot] = csv_parse("fabricated_data.csv")
-lots_by_id = {l.lot_id: l for l in parking_lots}
-
 @app.get("/")
 async def root():
     return {"message": "Welcome to the ParkingPal API!"}
@@ -97,13 +54,14 @@ async def root():
 # Filters by optional name/ID search and lot type
 # Sorts by percent full or name (asc/desc)
 # Converts full lot data to summarized form before returning
-@app.get("/lots", response_model=List[LotSummary])
+@app.get("/lots", response_model=List[lh.LotSummary])
 def list_lots(
     search_query: Optional[str] = Query(None, description="Search by name or ID"),
     lot_category: Optional[str] = Query(None, description="student|faculty|visitor"),
     sort_option: str = Query("percent_full", description="percent_full|lot_name|-percent_full|-lot_name"),
-):
-    def lot_matches(lot: Lot) -> bool:
+    ):
+    parking_lots = ldb.fetch_all_lots()
+    def lot_matches(lot: lh.Lot) -> bool:
         if lot_category and lot.type.lower() != lot_category.lower():
             return False
         if search_query:
@@ -118,12 +76,13 @@ def list_lots(
         if lot_matches(lot):
             matching_lots.append(lot)
 
+    # Grab sort option and char[0] for descending
     sort_field = sort_option.lstrip("-")
     descending_order = sort_option.startswith("-")
 
-    def sort_key_function(lot: Lot):
+    def sort_key_function(lot: lh.Lot):
         if sort_field == "percent_full":
-            return percent_full(lot)
+            return int((lot.current / lot.total_capacity) * 100)
         else:
             return lot.lot_name.lower()
 
@@ -138,9 +97,34 @@ def list_lots(
 
 
 # Get lot by ID
-@app.get("/lots/{lot_id}", response_model=LotSummary)
-def get_lot(lot_id: int):
-    lot = lots_by_id.get(lot_id)
+@app.get("/lots/{lot_id}", response_model=lh.LotSummary)
+async def get_lot(lot_id: int):
+    print("Fetching lot ID:", lot_id)
+    lot = ldb.fetch_lot_by_id(lot_id)
     if not lot:
         raise HTTPException(status_code=404, detail="Lot not found")
     return to_summary(lot)
+
+# Impliment an endpoint to manually generate an n number of events and update lots and events table and return both table's entries (all lots and 10 events)
+@app.post("/random_lot_event/{lot_id}", response_model=lh.LotSummary)
+async def random_lot_event(lot_id: int, num_events: int):
+
+    lot = ldb.fetch_lot_by_id(lot_id)
+    # print("Initial Fetched lot:", lot)
+
+    if not lot:
+        raise HTTPException(status_code=404, detail="Lot not found")
+
+    for _ in range(num_events):
+        ddb.fab_vehicle_entry(lot_id)
+        updated_lot = ldb.fetch_lot_by_id(lot_id)
+        # print("Updated lot:", updated_lot)
+
+    return to_summary(updated_lot)
+
+# Endpoint to post pins to the database
+@app.post("/pins", response_model=pdb.pin)
+async def create_pin(lot_id: int, loc_x: float, loc_y: float):
+    pin = pdb.create_pin_object(lot_id=lot_id, loc_x=loc_x, loc_y=loc_y)
+    pdb.insert_pin(pin)
+    return pin
