@@ -1,12 +1,14 @@
 # Run: fastapi dev main.py
 # Swagger: http://127.0.0.1:8000/docs
 from asyncio import sleep
+import datetime
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 import lot_helper as lh
 import lot_database as ldb
 import detection_database as ddb
+import pin_database as pdb
 
 app = FastAPI(title="ParkingPal API")
 
@@ -119,3 +121,10 @@ async def random_lot_event(lot_id: int, num_events: int):
         # print("Updated lot:", updated_lot)
 
     return to_summary(updated_lot)
+
+# Endpoint to post pins to the database
+@app.post("/pins", response_model=pdb.pin)
+async def create_pin(lot_id: int, loc_x: float, loc_y: float):
+    pin = pdb.create_pin_object(lot_id=lot_id, loc_x=loc_x, loc_y=loc_y)
+    pdb.insert_pin(pin)
+    return pin

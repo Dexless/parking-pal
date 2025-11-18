@@ -153,8 +153,6 @@ def fab_vehicle_entry(input_lot: int = -1):
 
     return
 
-# def simulate_day():
-    
 
 if __name__ == "__main__":
     #Debugging area :^)
