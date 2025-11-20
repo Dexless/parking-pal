@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>P3 Lot details</title>
+
+
+<style>
+    :root {
+        --bg: #0f172a;
+        --card: #0b1220;
+        --muted: #94a3b8;
+        --text: #e5e7eb;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --line: #334155;
+    }
+
+    * {
+        box-sizing: border-box
+    }
+
+    body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+        background: radial-gradient(1200px 600px at 80% -10%, #1f2937 0%, var(--bg) 45%) no-repeat, var(--bg);
+        color: var(--text);
+    }
+
+    header, main {
+        max-width: 900px;
+        margin: 24px auto;
+        padding: 0 16px;
+    }
+
+    a {
+        color: #93c5fd;
+        text-decoration: none
+    }
+
+        a:hover {
+            text-decoration: underline
+        }
+
+    .card {
+        background: linear-gradient(180deg,#0b1220,#0b1220cc);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(15,23,42,.45)
+    }
+
+    h1 {
+        margin: 6px 0 12px
+    }
+
+    .sub {
+        color: var(--muted);
+        margin: 0 0 16px
+    }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(4,1fr);
+        gap: 12px;
+        margin-top: 12px
+    }
+
+    .stat {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px;
+        background: #0b1220
+    }
+
+        .stat h3 {
+            margin: 0 0 4px;
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: .4px;
+            text-transform: uppercase
+        }
+
+        .stat p {
+            margin: 0;
+            font-size: 20px
+        }
+
+    .big {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 6px 0 10px;
+        font-size: clamp(22px, 4vw, 36px);
+    }
+
+    .pill {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        color: var(--muted)
+    }
+
+    .bar {
+        height: 16px;
+        background: #111827;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        overflow: hidden
+    }
+
+        .bar > div {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #22c55e, #60a5fa);
+            transition: width .5s
+        }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        font-size: 14px
+    }
+
+    th, td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 8px;
+        text-align: left
+    }
+
+    th {
+        color: var(--muted);
+        font-weight: 600
+    }
+
+    .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px
+    }
+</style>
+</head>
+<body>
+    <header>
+        <a class="back" href="ParkingPal.html">← Back to map</a>
+        <h1>Lot P3</h1>
+        <p class="sub">Live capacity and recent readings.</p>
+    </header>
+
+    <main class="card">
+        <div class="big">
+            <span id="percentText">—</span>
+            <span class="pill" id="statusChip">Loading…</span>
+        </div>
+
+        <div class="bar" aria-label="Occupancy">
+            <div id="barFill"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat"><h3>Total Spaces</h3><p id="totalSpaces">—</p></div>
+            <div class="stat"><h3>Occupied</h3><p id="occupiedSpaces">—</p></div>
+            <div class="stat"><h3>Available</h3><p id="availableSpaces">—</p></div>
+            <div class="stat"><h3>Last Updated</h3><p id="lastUpdated">—</p></div>
+        </div>
+
+        <h2 style="margin:18px 0 8px">Recent Data</h2>
+        <table id="dataTable" aria-label="Recent occupancy history">
+            <thead><tr><th>Time</th><th>Occupied</th><th>Available</th><th>% Full</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </main>
+
+    <script>
+    //Change data later
+    const lotData = {
+      lotId: "P1-2",
+      totalSpaces: 220,
+      occupied: 138,
+      lastUpdated: new Date().toISOString(),
+      history: [
+        { time: "10:00", occupied: 110 },
+        { time: "11:00", occupied: 125 },
+        { time: "12:00", occupied: 132 },
+        { time: "13:00", occupied: 136 },
+        { time: "14:00", occupied: 138 }
+      ]
+    };
+
+    function fmtPercent(n){ return (Math.round(n * 10) / 10).toFixed(1) + "%"; }
+
+    function render(data){
+      const total = data.totalSpaces;
+      const occ   = data.occupied;
+      const avail = Math.max(0, total - occ);
+      const pctFull = (occ / total) * 100;
+
+      // Big headline: "% full" and chip (status)
+      document.getElementById("percentText").textContent = fmtPercent(pctFull) + " full";
+      const chip = document.getElementById("statusChip");
+      chip.textContent = avail > 0 ? (avail >= total * 0.4 ? "Plenty of spaces" : (avail >= total * 0.15 ? "Some spaces" : "Limited")) : "Full";
+
+      // Bar
+      const fill = document.getElementById("barFill");
+      fill.style.width = Math.min(100, Math.max(0, pctFull)) + "%";
+
+      // Stats
+      document.getElementById("totalSpaces").textContent = total;
+      document.getElementById("occupiedSpaces").textContent = occ;
+      document.getElementById("availableSpaces").textContent = avail;
+      document.getElementById("lastUpdated").textContent = new Date(data.lastUpdated).toLocaleString();
+
+      // Table
+      const tbody = document.querySelector("#dataTable tbody");
+      tbody.innerHTML = "";
+      (data.history || []).forEach(row => {
+        const availRow = total - row.occupied;
+        const pct = (row.occupied / total) * 100;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.time}</td>
+          <td>${row.occupied}</td>
+          <td>${availRow}</td>
+          <td>${fmtPercent(pct)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    render(lotData);
+    </script>
+</body>
+</html>
