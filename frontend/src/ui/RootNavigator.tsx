@@ -8,7 +8,7 @@ import LotDetailsScreen from './screens/LotDetailsScreen';
 export type RootStackParamList = {
   Home: undefined;
   Map: undefined;
-  LotDetails: { lotId: string };
+  LotDetails: { lotId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

@@ -1,7 +1,5 @@
 # Run: fastapi dev main.py
 # Swagger: http://127.0.0.1:8000/docs
-from asyncio import sleep
-import datetime
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
@@ -35,11 +33,15 @@ def to_summary(obj: lh.Lot) -> lh.LotSummary:
     )
 
 # CORS (Cross-Origin Resource Sharing) settings
+# Add CORS for expo development servers
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173", "http://127.0.0.1:5173",  # Vite dev
         "http://localhost:3000", "http://127.0.0.1:3000",  # Next.js dev
+        "http://localhost:8081", "http://127.0.0.1:8081",  # React Native dev
+        "exp://127.0.0.1:19000", "exp://localhost:19000",  # Expo dev
+        "exp://129.8.225.20:8081"  # Expo LAN
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -104,6 +106,15 @@ async def get_lot(lot_id: int):
     if not lot:
         raise HTTPException(status_code=404, detail="Lot not found")
     return to_summary(lot)
+
+# Get all lot's crowd state
+@app.get("/lots_percent_full", response_model=List[str])
+async def get_lots_percent_full():
+    parking_lots = ldb.fetch_all_lots()
+    lots_percent_full = []
+    for lot in parking_lots:
+        lots_percent_full.append(full_type(int((lot.current / lot.total_capacity) * 100)))
+    return lots_percent_full
 
 # Impliment an endpoint to manually generate an n number of events and update lots and events table and return both table's entries (all lots and 10 events)
 @app.post("/random_lot_event/{lot_id}", response_model=lh.LotSummary)
