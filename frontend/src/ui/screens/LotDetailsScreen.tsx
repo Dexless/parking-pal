@@ -5,6 +5,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { RootStackParamList } from '../RootNavigator';
 import { LOTS } from '../data/campusLots';
 import { fetchLotData, Lot as LotData } from '../../api/lotApi';
+import { COLORS } from './colors';
 
 
 type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
@@ -39,6 +40,8 @@ export default function LotDetailsScreen() {
     );
   }
 
+  //Make all the text display white.
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{lot.name}</Text>
@@ -49,22 +52,20 @@ export default function LotDetailsScreen() {
 
         {lotData ? (
           <>
-            <Text>
-              Open spots: {lotData.total_capacity - lotData.current}
-            </Text>
-            <Text>Capacity: {lotData.total_capacity}</Text>
-            <Text>Currently parked: {lotData.current}</Text>
-            <Text>Percent full: {lotData.percent_full}%</Text>
-            <Text>Crowd: {lotData.state}</Text>
-            <Text>Hours: {lotData.hours}</Text>
-            <Text>Type: {lotData.type}</Text>
+              <Text style={{ color: '#fff' }}>Open spots: {lotData.total_capacity - lotData.current}</Text>
+            <Text style={{ color: '#fff' }}>Capacity: {lotData.total_capacity}</Text>
+            <Text style={{ color: '#fff' }}>Currently parked: {lotData.current}</Text>
+            <Text style={{ color: '#fff' }}>Percent full: {lotData.percent_full}%</Text>
+            <Text style={{ color: '#fff' }}>Crowd: {lotData.state}</Text>
+            <Text style={{ color: '#fff' }}>Hours: {lotData.hours}</Text>
+            <Text style={{ color: '#fff' }}>Type: {lotData.type}</Text>
           </>
         ) : (
           <>
-            <Text>Open spots: —</Text>
-            <Text>Capacity: —</Text>
-            <Text>Hours: —</Text>
-            <Text>Type: —</Text>
+            <Text style={{ color: '#fff' }}>Open spots: —</Text>
+            <Text style={{ color: '#fff' }}>Capacity: —</Text>
+            <Text style={{ color: '#fff' }}>Hours: —</Text>
+            <Text style={{ color: '#fff' }}>Type: —</Text>
           </>
         )}
       </View>
@@ -80,17 +81,41 @@ export default function LotDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: '800', marginBottom: 6 },
-  sub: { color: '#666', marginBottom: 16 },
-  card: { backgroundColor: '#f3f4f6', borderRadius: 12, padding: 14, gap: 6 },
-  h: { fontWeight: '700', marginBottom: 4 },
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: COLORS.bg,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 6,
+    color: COLORS.textPrimary,
+  },
+  sub: {
+    color: COLORS.textSecondary,
+    marginBottom: 16,
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 14,
+    gap: 6,
+  },
+  h: {
+    fontWeight: '700',
+    marginBottom: 4,
+    color: COLORS.textPrimary,
+  },
   btn: {
-    backgroundColor: '#0ea5e9',
+    backgroundColor: COLORS.accent,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
     alignSelf: 'flex-start',
   },
-  btnText: { color: '#fff', fontWeight: '700' },
+  btnText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
 });

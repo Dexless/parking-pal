@@ -5,9 +5,13 @@ import { LOTS } from '../data/campusLots';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
+import { COLORS } from './colors';
+import CampusStreets from '../../../assets/images/Campus_streets.svg';
+import CampusLots from '../../../assets/images/Campus_lots.svg';
+import { useWindowDimensions } from 'react-native';
+
 
 //Create a function that gets all lot crowd states from the API and create a dict of lot ID to crowd state.
-
 async function fetchLotFullnessPercentages() {
   try {
     const response = await fetch('http://localhost:8000/lots_percent_full');
@@ -38,19 +42,42 @@ export default function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [lotStates, setLotStates] = useState<{ [key: number]: string }>({});
 
+  const { width, height } = useWindowDimensions();
+  const MAP_ASPECT = 1692 / 1306;
+
+
+  const horizontalPadding = 12 * 2;
+  const verticalPadding = 12 * 2 + 60;
+  
+  const maxWidth = width - horizontalPadding;
+  const maxHeight = height - verticalPadding;
+  let frameWidth = maxWidth;
+  let frameHeight = frameWidth / MAP_ASPECT;
+  
+  if (frameHeight > maxHeight) {
+    frameHeight = maxHeight;
+    frameWidth = frameHeight * MAP_ASPECT;
+  }
+
   useEffect(() => {
     fetchLotFullnessPercentages().then(dict => {
       if (dict) setLotStates(dict);
     });
   }, []);
 
+//Add the svg layer but fix the issue where importing the svg turns the whole screen white.
+
   return (
     <View style={styles.root}>
       <View style={styles.frame}>
-        <Image
-          source={require('../../../assets/images/campus-map.png')}
-          style={styles.img}
+        <CampusStreets width="100%" height="100%" />
+        <CampusLots
+          width="100%"
+          height="100%"
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
         />
+
         <View style={StyleSheet.absoluteFill}>
           {LOTS.map(({ id, name, x, y, w, h }) => {
             const state = lotStates[id];
@@ -61,7 +88,7 @@ export default function MapScreen() {
             if (state && STATE_RGB[state]) {
               const [r, g, b] = STATE_RGB[state];
               backgroundColor = `rgba(${r},${g},${b},0.28)`;
-              borderColor = `rgba(${r},${g},${b},0.75)`;     
+              borderColor = `rgba(${r},${g},${b},0.75)`;
             }
 
             return (
@@ -90,10 +117,24 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#fff', padding: 12 },
-  frame: { width: '100%', aspectRatio: 1692 / 1306, alignSelf: 'center' },
-  img: { width: '100%', height: '100%', borderRadius: 8 },
-  // Colored overlay that still lets the underlying map show through:
+  root: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  frame: {
+    width: '100%',
+    aspectRatio: 1692 / 1306,
+    alignSelf: 'center',
+    position: 'relative',  
+  },
+  img: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
   block: {
     position: 'absolute',
     borderWidth: 1,
