@@ -1,6 +1,6 @@
 // src/app/screens/MapScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { LOTS } from '../data/campusLots';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,8 +10,7 @@ import CampusStreets from '../../../assets/images/Campus_streets.svg';
 import CampusLots from '../../../assets/images/Campus_lots.svg';
 import { useWindowDimensions } from 'react-native';
 
-
-//Create a function that gets all lot crowd states from the API and create a dict of lot ID to crowd state.
+// Create a function that gets all lot crowd states from the API and create a dict of lot ID to crowd state.
 async function fetchLotFullnessPercentages() {
   try {
     const response = await fetch('http://localhost:8000/lots_percent_full');
@@ -20,56 +19,54 @@ async function fetchLotFullnessPercentages() {
     data.forEach((percent, index) => {
       lotPercentDict[index] = percent;
     });
-    console.log("Lot Fullness Percentages Dictionary:", lotPercentDict);
+    console.log('Lot Fullness Percentages Dictionary:', lotPercentDict);
     return lotPercentDict;
   } catch (error) {
-    console.error("Error fetching lot fullness percentages:", error);
+    console.error('Error fetching lot fullness percentages:', error);
   }
 }
 
-
-
-// Call the function fetchLotFullnessPercentages to fetch and log the lot fullness percentages when the module is loaded and color each button accordingly.
+// Color mapping for lot states
 const STATE_RGB: Record<string, [number, number, number]> = {
-  EMPTY: [61, 133, 198],   // #3d85c6
-  LIGHT: [106, 168, 79],   // #6aa84f
-  MEDIUM: [241, 194, 50],  // #f1c232
-  HEAVY: [230, 145, 56],   // #e69138
-  FULL: [204, 0, 0],       // #cc0000
+  EMPTY: [61, 133, 198], // #3d85c6
+  LIGHT: [106, 168, 79], // #6aa84f
+  MEDIUM: [241, 194, 50], // #f1c232
+  HEAVY: [230, 145, 56], // #e69138
+  FULL: [204, 0, 0], // #cc0000
 };
 
 export default function MapScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [lotStates, setLotStates] = useState<{ [key: number]: string }>({});
 
   const { width, height } = useWindowDimensions();
   const MAP_ASPECT = 1692 / 1306;
 
-
+  // Leave some room for padding + header
   const horizontalPadding = 12 * 2;
   const verticalPadding = 12 * 2 + 60;
-  
+
   const maxWidth = width - horizontalPadding;
   const maxHeight = height - verticalPadding;
+
   let frameWidth = maxWidth;
   let frameHeight = frameWidth / MAP_ASPECT;
-  
+
   if (frameHeight > maxHeight) {
     frameHeight = maxHeight;
     frameWidth = frameHeight * MAP_ASPECT;
   }
 
   useEffect(() => {
-    fetchLotFullnessPercentages().then(dict => {
+    fetchLotFullnessPercentages().then((dict) => {
       if (dict) setLotStates(dict);
     });
   }, []);
 
-//Add the svg layer but fix the issue where importing the svg turns the whole screen white.
-
   return (
     <View style={styles.root}>
-      <View style={styles.frame}>
+      <View style={[styles.frame, { width: frameWidth, height: frameHeight }]}>
         <CampusStreets width="100%" height="100%" />
         <CampusLots
           width="100%"
@@ -125,15 +122,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   frame: {
-    width: '100%',
-    aspectRatio: 1692 / 1306,
     alignSelf: 'center',
-    position: 'relative',  
-  },
-  img: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
+    position: 'relative',
   },
   block: {
     position: 'absolute',
