@@ -8,9 +8,10 @@ import type { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
 import CampusStreets from '../../../assets/images/Campus_streets.svg';
 import CampusLots from '../../../assets/images/Campus_lots.svg';
+import CampusLotNames from '../../../assets/images/campus_lot_names.svg';
 import { useWindowDimensions } from 'react-native';
 
-// Create a function that gets all lot crowd states from the API and create a dict of lot ID to crowd state.
+// Gets all lot crowd states from the API and create a dict of lot ID to crowd state.
 async function fetchLotFullnessPercentages() {
   try {
     const response = await fetch('http://localhost:8000/lots_percent_full');
@@ -35,6 +36,7 @@ const STATE_RGB: Record<string, [number, number, number]> = {
   FULL: [204, 0, 0], // #cc0000
 };
 
+// Main MapScreen component
 export default function MapScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -73,6 +75,13 @@ export default function MapScreen() {
           height="100%"
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
+        />
+        <CampusLotNames
+          width="100%"
+          height="100%"
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
+          fill="#adadadff"
         />
 
         <View style={StyleSheet.absoluteFill}>

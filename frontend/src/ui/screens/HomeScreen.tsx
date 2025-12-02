@@ -5,6 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
 import { Video } from 'expo-av';
+import { useEffect } from 'react';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -12,13 +13,24 @@ const VIDEO_WIDTH = 1280;
 const VIDEO_HEIGHT = 720;
 
 export default function HomeScreen({ navigation }: Props) {
+
+  //Hide header
+  useEffect(() => {
+      navigation.setOptions({
+        headerShown: false,
+      });
+    }, [navigation]);
+
+  // Calculate scale to cover the entire screen
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
+  // Calculate scale to cover the entire screen DO NOT CHANGE THE VIDEO WIDTH AND HEIGHT VARIABLES
   const scale = Math.max(
     screenWidth / VIDEO_WIDTH,
     screenHeight / VIDEO_HEIGHT
   );
 
+  // Render
   return (
     <View style={styles.container}>
       <View style={styles.videoWrapper}>
@@ -45,6 +57,7 @@ export default function HomeScreen({ navigation }: Props) {
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,

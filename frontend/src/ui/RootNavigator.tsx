@@ -9,11 +9,11 @@ import { COLORS } from './screens/colors';
 export type RootStackParamList = {
   Home: undefined;
   Map: undefined;
+  Lotinfo: undefined;
   LotDetails: { lotId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-// make the root navigator with three screens: Home, Map, LotDetails, lot details has a dropdown param of lotId
 export default function RootNavigator() {
   return (
     <Stack.Navigator

@@ -139,3 +139,17 @@ async def create_pin(lot_id: int, loc_x: float, loc_y: float):
     pin = pdb.create_pin_object(lot_id=lot_id, loc_x=loc_x, loc_y=loc_y)
     pdb.insert_pin(pin)
     return pin
+
+# Endpoint to randomize lot data by ID in case lot is not populated
+@app.post("/randomize_lot/{lot_id}", response_model=lh.LotSummary)
+async def randomize_lot(lot_id: int):
+    lot = ldb.fetch_lot_by_id(lot_id)
+
+    if not lot:
+        raise HTTPException(status_code=404, detail="Lot not found")
+
+    # Randomize lot data
+    ldb.randomize_lot_data(lot_id, False)
+
+    updated_lot = ldb.fetch_lot_by_id(lot_id)
+    return to_summary(updated_lot)

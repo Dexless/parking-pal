@@ -23,3 +23,13 @@ export async function fetchLotData(lot_id: number) {
     console.error("Error fetching data:", error);
   }
 }
+
+export async function randomizeData(lot_id: number) {
+  try {
+    const response = await axios.get(`http://localhost:8000/randomize_lot/${lot_id}`);
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  }
+}
