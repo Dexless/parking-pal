@@ -10,8 +10,10 @@ import CampusStreets from '../../../assets/images/Campus_streets.svg';
 import CampusLots from '../../../assets/images/Campus_lots.svg';
 import CampusLotNames from '../../../assets/images/campus_lot_names.svg';
 
+// Define route prop type for LotDetails screen
 type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
 
+// Aspect ratio of the campus map
 const MAP_ASPECT = 1692 / 1306;
 
 type LotZoom = {
@@ -20,8 +22,7 @@ type LotZoom = {
   scale: number;
 };
 
-// Hand-tuned camera presets per lotId.
-// Start with the ones you like and add/tweak as you go.
+// Predefined zooms for each lot ID
 const LOT_ZOOMS: Record<number, LotZoom> = {
   0:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P1
   1:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P2
@@ -186,62 +187,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.bg,
   },
-  leftPane: { // Left pane styles
+  leftPane: { // Left pane styles definition
     flex: 1,
     padding: 16,
     justifyContent: 'flex-start',
   },
-  rightPane: { // Right pane styles
+  rightPane: { // Right pane styles definition
     flex: 2,
     backgroundColor: COLORS.bg,
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  divider: { // Divider styles
+  divider: { // Divider styles definition
     width: 1,
     backgroundColor: COLORS.textSecondary,
     marginVertical: 24,
     alignSelf: 'stretch',
   },
-  mapOuter: {
+  mapOuter: { // Map outer container styles definition
     width: '100%',
     aspectRatio: MAP_ASPECT,
     overflow: 'hidden',
   },
-  mapInner: {
+  mapInner: { // Map inner container styles definition
     flex: 1,
     position: 'relative',
   },
-  title: {
+  title: { // Title text styles definition
     fontSize: 24,
     fontWeight: '800',
     marginBottom: 6,
     color: COLORS.textPrimary,
   },
-  sub: {
+  sub: { // Subtitle text styles definition
     color: COLORS.textSecondary,
     marginBottom: 16,
   },
-  card: {
+  card: { // Card styles definition
     backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 14,
     gap: 6,
   },
-  h: {
+  h: { // Heading text styles definition
     fontWeight: '700',
     marginBottom: 4,
     color: COLORS.textPrimary,
   },
-  btn: {
+  btn: { // Button styles definition
     backgroundColor: COLORS.accent,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
     alignSelf: 'flex-start',
   },
-  btnText: {
+  btnText: { // Button text styles definition
     color: '#fff',
     fontWeight: '700',
   },

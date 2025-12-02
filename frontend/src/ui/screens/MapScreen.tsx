@@ -60,6 +60,7 @@ export default function MapScreen() {
     frameWidth = frameHeight * MAP_ASPECT;
   }
 
+  // Fetch lot fullness percentages on mount
   useEffect(() => {
     fetchLotFullnessPercentages().then((dict) => {
       if (dict) setLotStates(dict);
@@ -70,13 +71,13 @@ export default function MapScreen() {
     <View style={styles.root}>
       <View style={[styles.frame, { width: frameWidth, height: frameHeight }]}>
         <CampusStreets width="100%" height="100%" />
-        <CampusLots
+        <CampusLots // Campus lots SVG overlay
           width="100%"
           height="100%"
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         />
-        <CampusLotNames
+        <CampusLotNames // Campus lot names SVG overlay
           width="100%"
           height="100%"
           style={StyleSheet.absoluteFillObject}
@@ -123,18 +124,18 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
+  root: { // Root container styles definition
     flex: 1,
     backgroundColor: COLORS.bg,
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  frame: {
+  frame: { // Map frame styles definition
     alignSelf: 'center',
     position: 'relative',
   },
-  block: {
+  block: { // Lot block styles definition
     position: 'absolute',
     borderWidth: 1,
     borderRadius: 4,

@@ -6,6 +6,7 @@ import MapScreen from './screens/MapScreen';
 import LotDetailsScreen from './screens/LotDetailsScreen';
 import { COLORS } from './screens/colors';
 
+// Define the type for the root stack parameters
 export type RootStackParamList = {
   Home: undefined;
   Map: undefined;
@@ -13,6 +14,7 @@ export type RootStackParamList = {
   LotDetails: { lotId: number };
 };
 
+// Create the native stack navigator
 const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   return (
@@ -29,17 +31,17 @@ export default function RootNavigator() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen
+      <Stack.Screen // Home screen
         name="Home"
         component={HomeScreen}
         options={{ title: 'Parking Pal' }}
       />
-      <Stack.Screen
+      <Stack.Screen // Map screen
         name="Map"
         component={MapScreen}
         options={{ title: 'Campus Map' }}
       />
-      <Stack.Screen
+      <Stack.Screen // Lot details screen
         name="LotDetails"
         component={LotDetailsScreen}
         options={{ title: 'Lot Details' }}

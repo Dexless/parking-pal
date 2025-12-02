@@ -13,7 +13,7 @@ export interface Lot {
   hours: string;
 }
 
-
+// Fetch lot data by lot ID
 export async function fetchLotData(lot_id: number) {
   try {
     const response = await axios.get(`http://localhost:8000/lots/${lot_id}`);
@@ -24,6 +24,7 @@ export async function fetchLotData(lot_id: number) {
   }
 }
 
+// Randomize lot data in case values are not populated and error occurs
 export async function randomizeData(lot_id: number) {
   try {
     const response = await axios.get(`http://localhost:8000/randomize_lot/${lot_id}`);
