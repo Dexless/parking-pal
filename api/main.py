@@ -1,6 +1,6 @@
 # Run: fastapi dev main.py
 # Swagger: http://127.0.0.1:8000/docs
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 import lot_helper as lh
@@ -116,22 +116,11 @@ async def get_lots_percent_full():
         lots_percent_full.append(full_type(int((lot.current / lot.total_capacity) * 100)))
     return lots_percent_full
 
-# Impliment an endpoint to manually generate an n number of events and update lots and events table and return both table's entries (all lots and 10 events)
-@app.post("/random_lot_event/{lot_id}", response_model=lh.LotSummary)
-async def random_lot_event(lot_id: int, num_events: int):
+# Endpoint to randomize lot data for all or specific lot
+@app.post("/randomize_all_lot_events/{lot_num}/{all_lots}", status_code=status.HTTP_204_NO_CONTENT)
+async def randomize_all_lot_events(lot_num: int, all_lots: bool):
+    ldb.randomize_lot_data(lot_num, all_lots)
 
-    lot = ldb.fetch_lot_by_id(lot_id)
-    # print("Initial Fetched lot:", lot)
-
-    if not lot:
-        raise HTTPException(status_code=404, detail="Lot not found")
-
-    for _ in range(num_events):
-        ddb.fab_vehicle_entry(lot_id)
-        updated_lot = ldb.fetch_lot_by_id(lot_id)
-        # print("Updated lot:", updated_lot)
-
-    return to_summary(updated_lot)
 
 # Endpoint to post pins to the database
 @app.post("/pins", response_model=pdb.pin)

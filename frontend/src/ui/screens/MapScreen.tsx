@@ -10,22 +10,7 @@ import CampusStreets from '../../../assets/images/Campus_streets.svg';
 import CampusLots from '../../../assets/images/Campus_lots.svg';
 import CampusLotNames from '../../../assets/images/campus_lot_names.svg';
 import { useWindowDimensions } from 'react-native';
-
-// Gets all lot crowd states from the API and create a dict of lot ID to crowd state.
-async function fetchLotFullnessPercentages() {
-  try {
-    const response = await fetch('http://localhost:8000/lots_percent_full');
-    const data: string[] = await response.json();
-    const lotPercentDict: { [key: number]: string } = {};
-    data.forEach((percent, index) => {
-      lotPercentDict[index] = percent;
-    });
-    console.log('Lot Fullness Percentages Dictionary:', lotPercentDict);
-    return lotPercentDict;
-  } catch (error) {
-    console.error('Error fetching lot fullness percentages:', error);
-  }
-}
+import { fetchLotFullnessPercentages} from '../../api/lotApi';
 
 // Color mapping for lot states
 const STATE_RGB: Record<string, [number, number, number]> = {
@@ -35,6 +20,7 @@ const STATE_RGB: Record<string, [number, number, number]> = {
   HEAVY: [230, 145, 56], // #e69138
   FULL: [204, 0, 0], // #cc0000
 };
+
 
 // Main MapScreen component
 export default function MapScreen() {
@@ -60,7 +46,7 @@ export default function MapScreen() {
     frameWidth = frameHeight * MAP_ASPECT;
   }
 
-  // Fetch lot fullness percentages on mount
+  // Fetch lot fullness percentages on start - func moved to lotApi.ts
   useEffect(() => {
     fetchLotFullnessPercentages().then((dict) => {
       if (dict) setLotStates(dict);

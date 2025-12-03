@@ -29,11 +29,11 @@ const LOT_ZOOMS: Record<number, LotZoom> = {
   2:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P3
   3:  { centerX: 0.3401, centerY: 0.3307, scale: 1.8 }, // P5
   4:  { centerX: 0.3401, centerY: 0.2307, scale: 1.8 }, // P6
-  5:  { centerX: 0.4701, centerY: 0.1907, scale: 1.8 },  // P9
+  5:  { centerX: 0.4701, centerY: 0.1907, scale: 1.8 }, // P9
   7:  { centerX: 0.4701, centerY: 0.1907, scale: 1.8 }, // P11
-  9:  { centerX: 0.2722, centerY: 0.17, scale: 2 }, // P15
-  10: { centerX: 0.12,   centerY: 0.10,   scale: 1.8 },  // P20
-  11: { centerX: 0.1401, centerY: 0.4007, scale: 1.8 },  // P27
+  9:  { centerX: 0.2722, centerY: 0.1700, scale: 2.0 }, // P15
+  10: { centerX: 0.1200, centerY: 0.1000, scale: 1.8 }, // P20
+  11: { centerX: 0.1401, centerY: 0.4007, scale: 1.8 }, // P27
 };
 
 export default function LotDetailsScreen() {
@@ -60,6 +60,7 @@ export default function LotDetailsScreen() {
     setMapLayout({ width, height });
   };
 
+  // Math
   const mapTransform = useMemo(() => {
     if (!mapLayout) return undefined;
 
@@ -143,15 +144,15 @@ export default function LotDetailsScreen() {
             </>
           )}
         </View>
-
-        <Pressable
+        
+        <Pressable // Back to map button
           style={[styles.btn, { backgroundColor: '#808080' }, { marginTop: 16 }]}
           onPress={() => navigation.goBack()}
         >
           <Text style={[styles.btnText, { backgroundColor: '#808080' }]}>Back to Map</Text>
         </Pressable>
       </View>
-
+      
       <View style={styles.divider} />
 
       <View style={styles.rightPane}>

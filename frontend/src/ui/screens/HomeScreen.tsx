@@ -6,6 +6,7 @@ import { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
 import { Video } from 'expo-av';
 import { useEffect } from 'react';
+import { randomize_all_lot_events } from '../../api/lotApi';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -13,6 +14,17 @@ const VIDEO_WIDTH = 1280;
 const VIDEO_HEIGHT = 720;
 
 export default function HomeScreen({ navigation }: Props) {
+    useEffect(() => {
+    async function init() {
+      try {
+        await randomize_all_lot_events(-1, true);
+      } catch (err) {
+        console.error("Failed to randomize lots on app start", err);
+      }
+    }
+
+    init();
+  }, []);
 
   //Hide header
   useEffect(() => {
