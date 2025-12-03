@@ -104,7 +104,16 @@ async def get_lot(lot_id: int):
     print("Fetching lot ID:", lot_id)
     lot = ldb.fetch_lot_by_id(lot_id)
     if not lot:
-        raise HTTPException(status_code=404, detail="Lot not found")
+        return lh.LotSummary(
+            lot_id=lot_id,
+            lot_name='N/A',
+            total_capacity=0,
+            current=0,
+            percent_full=0,
+            state="N/A",
+            type="N/A",
+            hours="N/A"
+        )
     return to_summary(lot)
 
 # Get all lot's crowd state
