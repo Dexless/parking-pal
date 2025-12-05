@@ -106,7 +106,7 @@ def rand_current(capacity: int):
     return int(random() * capacity)
 
 # lot_id|lot_name|total_capacity|current|type|hours
-def randomize_Lot_Data(lot_id: int, all_lots = False):
+def randomize_lot_data(lot_id: int = -1, all_lots: bool = False):
     connection = lh.establish_connection()
     cursor = connection.cursor()
 

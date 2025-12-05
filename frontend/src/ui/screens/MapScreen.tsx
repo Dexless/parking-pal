@@ -1,56 +1,76 @@
 // src/app/screens/MapScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { LOTS } from '../data/campusLots';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
+import { COLORS } from './colors';
+import CampusStreets from '../../../assets/images/Campus_streets.svg';
+import CampusLots from '../../../assets/images/Campus_lots.svg';
+import CampusLotNames from '../../../assets/images/campus_lot_names.svg';
+import { useWindowDimensions } from 'react-native';
+import { fetchLotFullnessPercentages} from '../../api/lotApi';
 
-//Create a function that gets all lot crowd states from the API and create a dict of lot ID to crowd state.
-
-async function fetchLotFullnessPercentages() {
-  try {
-    const response = await fetch('http://localhost:8000/lots_percent_full');
-    const data: string[] = await response.json();
-    const lotPercentDict: { [key: number]: string } = {};
-    data.forEach((percent, index) => {
-      lotPercentDict[index] = percent;
-    });
-    console.log("Lot Fullness Percentages Dictionary:", lotPercentDict);
-    return lotPercentDict;
-  } catch (error) {
-    console.error("Error fetching lot fullness percentages:", error);
-  }
-}
-
-
-
-// Call the function fetchLotFullnessPercentages to fetch and log the lot fullness percentages when the module is loaded and color each button accordingly.
+// Color mapping for lot states
 const STATE_RGB: Record<string, [number, number, number]> = {
-  EMPTY: [61, 133, 198],   // #3d85c6
-  LIGHT: [106, 168, 79],   // #6aa84f
-  MEDIUM: [241, 194, 50],  // #f1c232
-  HEAVY: [230, 145, 56],   // #e69138
-  FULL: [204, 0, 0],       // #cc0000
+  EMPTY: [61, 133, 198], // #3d85c6
+  LIGHT: [106, 168, 79], // #6aa84f
+  MEDIUM: [241, 194, 50], // #f1c232
+  HEAVY: [230, 145, 56], // #e69138
+  FULL: [204, 0, 0], // #cc0000
 };
 
+
+// Main MapScreen component
 export default function MapScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [lotStates, setLotStates] = useState<{ [key: number]: string }>({});
 
+  const { width, height } = useWindowDimensions();
+  const MAP_ASPECT = 1692 / 1306;
+
+  // Leave some room for padding + header
+  const horizontalPadding = 12 * 2;
+  const verticalPadding = 12 * 2 + 60;
+
+  const maxWidth = width - horizontalPadding;
+  const maxHeight = height - verticalPadding;
+
+  let frameWidth = maxWidth;
+  let frameHeight = frameWidth / MAP_ASPECT;
+
+  if (frameHeight > maxHeight) {
+    frameHeight = maxHeight;
+    frameWidth = frameHeight * MAP_ASPECT;
+  }
+
+  // Fetch lot fullness percentages on start - func moved to lotApi.ts
   useEffect(() => {
-    fetchLotFullnessPercentages().then(dict => {
+    fetchLotFullnessPercentages().then((dict) => {
       if (dict) setLotStates(dict);
     });
   }, []);
 
   return (
     <View style={styles.root}>
-      <View style={styles.frame}>
-        <Image
-          source={require('../../../assets/images/campus-map.png')}
-          style={styles.img}
+      <View style={[styles.frame, { width: frameWidth, height: frameHeight }]}>
+        <CampusStreets width="100%" height="100%" />
+        <CampusLots // Campus lots SVG overlay
+          width="100%"
+          height="100%"
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
         />
+        <CampusLotNames // Campus lot names SVG overlay
+          width="100%"
+          height="100%"
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
+          fill="#adadadff"
+        />
+
         <View style={StyleSheet.absoluteFill}>
           {LOTS.map(({ id, name, x, y, w, h }) => {
             const state = lotStates[id];
@@ -61,7 +81,7 @@ export default function MapScreen() {
             if (state && STATE_RGB[state]) {
               const [r, g, b] = STATE_RGB[state];
               backgroundColor = `rgba(${r},${g},${b},0.28)`;
-              borderColor = `rgba(${r},${g},${b},0.75)`;     
+              borderColor = `rgba(${r},${g},${b},0.75)`;
             }
 
             return (
@@ -90,11 +110,18 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#fff', padding: 12 },
-  frame: { width: '100%', aspectRatio: 1692 / 1306, alignSelf: 'center' },
-  img: { width: '100%', height: '100%', borderRadius: 8 },
-  // Colored overlay that still lets the underlying map show through:
-  block: {
+  root: { // Root container styles definition
+    flex: 1,
+    backgroundColor: COLORS.bg,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  frame: { // Map frame styles definition
+    alignSelf: 'center',
+    position: 'relative',
+  },
+  block: { // Lot block styles definition
     position: 'absolute',
     borderWidth: 1,
     borderRadius: 4,

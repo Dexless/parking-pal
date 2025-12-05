@@ -2,7 +2,6 @@ import psycopg2
 from pydantic import BaseModel
 from typing import Literal
 
-
 # Enforce types with BModels
 class Lot(BaseModel):
     lot_id: int

@@ -4,21 +4,48 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './screens/HomeScreen';
 import MapScreen from './screens/MapScreen';
 import LotDetailsScreen from './screens/LotDetailsScreen';
+import { COLORS } from './screens/colors';
 
+// Define the type for the root stack parameters
 export type RootStackParamList = {
   Home: undefined;
   Map: undefined;
+  Lotinfo: undefined;
   LotDetails: { lotId: number };
 };
 
+// Create the native stack navigator
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
 export default function RootNavigator() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Parking Pal' }} />
-      <Stack.Screen name="Map" component={MapScreen} options={{ title: 'Campus Map' }} />
-      <Stack.Screen name="LotDetails" component={LotDetailsScreen} options={{ title: 'Lot Details' }} />
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: COLORS.bg,
+        },
+        headerTintColor: '#ffffff',
+        headerTitleStyle: {
+          color: '#ffffff',
+          fontWeight: '600',
+        },
+        headerShadowVisible: false,
+      }}
+    >
+      <Stack.Screen // Home screen
+        name="Home"
+        component={HomeScreen}
+        options={{ title: 'Parking Pal' }}
+      />
+      <Stack.Screen // Map screen
+        name="Map"
+        component={MapScreen}
+        options={{ title: 'Campus Map' }}
+      />
+      <Stack.Screen // Lot details screen
+        name="LotDetails"
+        component={LotDetailsScreen}
+        options={{ title: 'Lot Details' }}
+      />
     </Stack.Navigator>
   );
 }
