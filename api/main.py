@@ -104,7 +104,16 @@ async def get_lot(lot_id: int):
     print("Fetching lot ID:", lot_id)
     lot = ldb.fetch_lot_by_id(lot_id)
     if not lot:
-        raise HTTPException(status_code=404, detail="Lot not found")
+        return lh.LotSummary(
+            lot_id=lot_id,
+            lot_name='N/A',
+            total_capacity=0,
+            current=0,
+            percent_full=0,
+            state="N/A",
+            type="N/A",
+            hours="N/A"
+        )
     return to_summary(lot)
 
 # Get all lot's crowd state
@@ -142,3 +151,10 @@ async def randomize_lot(lot_id: int):
 
     updated_lot = ldb.fetch_lot_by_id(lot_id)
     return to_summary(updated_lot)
+
+# Endpoint to post pins to the database (v1.1)
+@app.post("/pins", response_model=pdb.pin)
+async def create_pin(lot_id: int, loc_x: float, loc_y: float):
+    pin = pdb.create_pin_object(lot_id=lot_id, loc_x=loc_x, loc_y=loc_y)
+    pdb.insert_pin(pin)
+    return pin
