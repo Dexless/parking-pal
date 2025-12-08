@@ -34,6 +34,7 @@ def to_summary(obj: lh.Lot) -> lh.LotSummary:
 
 # CORS (Cross-Origin Resource Sharing) settings
 # Add CORS for expo development servers
+# Some ports are redundant to run locally
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
