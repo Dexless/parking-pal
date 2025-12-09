@@ -10,6 +10,8 @@ import { COLORS } from './colors';
 import CampusStreets from '../../../assets/images/Campus_streets.svg';
 import CampusLots from '../../../assets/images/Campus_lots.svg';
 import CampusLotNames from '../../../assets/images/campus_lot_names.svg';
+import { getLang, setLang as saveLang } from "../../langSave";
+
 
 // Define route prop type for LotDetails screen
 type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
@@ -46,6 +48,37 @@ const STATE_RGB: Record<string, [number, number, number]> = {
 };
 
 export default function LotDetailsScreen() {
+  // translations for spanish
+  const [lang, setLang] = useState<"en" | "es">(getLang());
+  // save selection
+  function updateLanguage(newLang: "en" | "es") {
+    saveLang(newLang);   // saves globally
+    setLang(newLang);    // updates UI
+  }
+
+  const text = {
+    capacitySubtitle:
+      lang === "en"
+        ? "Live capacity and recent readings."
+        : "Capacidad en vivo y lecturas recientes.",
+    total: lang === "en" ? "Total Spaces" : "Espacios Totales",
+    occupied: lang === "en" ? "Occupied" : "Ocupados",
+    available: lang === "en" ? "Available" : "Disponibles",
+    crowd: lang === "en" ? "Crowd" : "Afluencia",
+    hours: lang === "en" ? "Hours" : "Horario",
+    type: lang === "en" ? "Type" : "Tipo",
+    back: lang === "en" ? "Back to Map" : "Volver al Mapa",
+    notFound: lang === "en" ? "Lot not found" : "Lote no encontrado",
+  };
+
+  const statusText = {
+    full: lang === "en" ? "Full" : "Lleno",
+    plenty: lang === "en" ? "Plenty of spaces" : "Muchos espacios",
+    some: lang === "en" ? "Some spaces" : "Algunos espacios",
+    limited: lang === "en" ? "Limited" : "Limitado",
+    loading: lang === "en" ? "Loading…" : "Cargando…",
+  };
+
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<DetailsRoute>();
@@ -83,13 +116,15 @@ export default function LotDetailsScreen() {
   const percentLabel =
     percentFull != null ? `${percentFull.toFixed(1)}% full` : '—';
 
-  let statusChip = 'Loading…';
+  let statusChip = statusText.loading;
+
   if (total != null && available != null) {
-    if (available <= 0) statusChip = 'Full';
-    else if (available >= total * 0.4) statusChip = 'Plenty of spaces';
-    else if (available >= total * 0.15) statusChip = 'Some spaces';
-    else statusChip = 'Limited';
+    if (available <= 0) statusChip = statusText.full;
+    else if (available >= total * 0.4) statusChip = statusText.plenty;
+    else if (available >= total * 0.15) statusChip = statusText.some;
+    else statusChip = statusText.limited;
   }
+
 
   let barColor = COLORS.accent;
   const crowdState = lotData?.state;
@@ -104,12 +139,23 @@ export default function LotDetailsScreen() {
       <View style={styles.screen}>
         <View style={styles.contentRow}>
           <View style={styles.leftPane}>
-            <Text style={styles.title}>Lot not found</Text>
+
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+              <Pressable onPress={() => updateLanguage("en")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
+                <Text style={{ color: "white" }}>EN</Text>
+              </Pressable>
+
+              <Pressable onPress={() => updateLanguage("es")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
+                <Text style={{ color: "white" }}>ES</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.title}>{text.notFound}</Text>
             <Pressable
               style={styles.btn}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.btnText}>Back to Map</Text>
+              <Text style={styles.btnText}>{text.back}</Text>
             </Pressable>
           </View>
         </View>
@@ -126,8 +172,9 @@ export default function LotDetailsScreen() {
     <View style={styles.screen}>
       <View style={styles.contentRow}>
         <View style={styles.leftPane}>
+
           <Text style={[styles.title, { fontSize: textSizeLarge }]}>{lot.name}</Text>
-          <Text style={styles.sub}>Live capacity and recent readings.</Text>
+          <Text style={styles.sub}>{text.capacitySubtitle}</Text>
 
           <View style={styles.card}>
             <View style={styles.bigRow}>
@@ -151,25 +198,25 @@ export default function LotDetailsScreen() {
 
             <View style={styles.statsRow}>
               <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Total Spaces</Text>
+                <Text style={styles.statLabel}>{text.total}</Text>
                 <Text style={styles.statValue}>
                   {total != null ? total : '—'}
                 </Text>
               </View>
               <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Occupied</Text>
+                <Text style={styles.statLabel}>{text.occupied}</Text>
                 <Text style={styles.statValue}>
                   {occupied != null ? occupied : '—'}
                 </Text>
               </View>
               <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Available</Text>
+                <Text style={styles.statLabel}>{text.available}</Text>
                 <Text style={styles.statValue}>
                   {available != null ? available : '—'}
                 </Text>
               </View>
               <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Crowd</Text>
+                <Text style={styles.statLabel}>{text.crowd}</Text>
                 <Text style={styles.statValue}>
                   {lotData ? lotData.state : '—'}
                 </Text>
@@ -178,20 +225,62 @@ export default function LotDetailsScreen() {
 
             <View style={styles.extraInfo}>
               <Text style={{ color: '#e5e7eb', fontSize: textSizeSmall }}>
-                Hours: {lotData ? lotData.hours : '—'}
+                {text.hours}: {lotData ? lotData.hours : '—'}
               </Text>
               <Text style={{ color: '#e5e7eb', fontSize: textSizeSmall }}>
-                Type: {lotData ? lotData.type : '—'}
+                {text.type}: {lotData ? lotData.type : '—'}
               </Text>
             </View>
           </View>
 
-          <Pressable // Back to map button
-            style={[styles.btn, styles.backBtn]}
-            onPress={() => navigation.goBack()}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 16,
+              width: "100%",
+            }}
           >
-            <Text style={styles.btnText}>Back to Map</Text>
-          </Pressable>
+
+            <Pressable  // back button to go to map
+              style={[styles.btn, styles.backBtn]}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.btnText}>{text.back}</Text>
+            </Pressable>
+
+            <View style={{ flexDirection: "row", gap: 8 }}>   
+              <Pressable
+                onPress={() => updateLanguage("en")}   // enlish button
+                style={{
+                  width: 36,
+                  height: 36,
+                  backgroundColor: "#333",
+                  borderRadius: 6,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "600" }}>EN</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => updateLanguage("es")}   // spanish button
+                style={{
+                  width: 36,
+                  height: 36,
+                  backgroundColor: "#333",
+                  borderRadius: 6,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "600" }}>ES</Text>
+              </Pressable>
+            </View>
+          </View>
+
         </View>
 
         <View style={styles.rightPane}>

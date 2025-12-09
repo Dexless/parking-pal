@@ -5,8 +5,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
 import { Video } from 'expo-av';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { randomize_all_lot_events } from '../../api/lotApi';
+import { getLang, setLang as saveLang } from "../../langSave";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -14,6 +15,21 @@ const VIDEO_WIDTH = 1280;
 const VIDEO_HEIGHT = 720;
 
 export default function HomeScreen({ navigation }: Props) {
+    // translations for spanish
+    const [lang, setLang] = useState<"en" | "es">(getLang());
+    // save selection
+    function changeLang(newLang: "en" | "es") {
+      saveLang(newLang);   // update global
+      setLang(newLang);    // update screen UI
+    }
+    
+    // text translations
+    const text = {
+      title: lang === "en" ? "Parking Pal" : "Parking Pal",
+      subtitle: lang === "en" ? "Find campus parking fast." : "Encuentra estacionamiento rápidamente.",
+      openMap: lang === "en" ? "Open Map" : "Abrir Mapa",
+    };
+
     useEffect(() => {
     async function init() {
       try {
@@ -58,11 +74,22 @@ export default function HomeScreen({ navigation }: Props) {
       <View style={styles.overlay} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>Parking Pal</Text>
-        <Text style={styles.subtitle}>Find campus parking fast.</Text>
+        
+        <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", gap: 8 }}>
+          <Pressable onPress={() => changeLang("en")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
+            <Text style={{ color: "white" }}>EN</Text>
+          </Pressable>
+
+          <Pressable onPress={() => changeLang("es")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
+            <Text style={{ color: "white" }}>ES</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.title}>{text.title}</Text>
+        <Text style={styles.subtitle}>{text.subtitle}</Text>
 
         <Pressable style={[styles.cta, { backgroundColor: '#808080' }]} onPress={() => navigation.navigate('Map')}>
-          <Text style={styles.ctaText}>Open Map</Text>
+          <Text style={styles.ctaText}>{text.openMap}</Text>
         </Pressable>
       </View>
     </View>
