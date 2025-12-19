@@ -31,3 +31,25 @@ Notes: Scrum cycle 1 had a good linear progression. Our goals for end to end con
         - create template for next page, get ready for integration
 
 Notes: Scrum cycle 2 made furthering attempts to get the entire infrastructure of the project complete. By now the project has a working API and database layer and automatic generation of fabricated data using a Discrete Event Simulation approach. Frontend work has proven fruitful in producing a user experience that is not only easily manageable but also visually appealing. Final work in cycle 3 will attempt to layer the program in such a way that a prototype allows for seamless viewing of lot information for the user on a per-lot basis. The team is confident that the integration of all components will be achieved smoothly given the modular architecture established in previous cycles.
+
+### Scrum Cycle 3
+
+- Integration
+  - Database ↔ FastAPI ↔ Frontend end-to-end connection
+  - Standardized lot data responses (capacity, available spaces, timestamps)
+  - Added loading/error handling for live requests
+
+- Database
+  - PostgreSQL reliably stores assets + per-lot status data
+  - Fabricated data pipeline now writes/reads from DB consistently
+  - Improved integrity/performance with constraints + indexing
+
+- Frontend
+  - Visual overhaul of the home/map view (cleaner layout + navigation)
+  - Added per-lot detail view template for click-through viewing
+
+- Spanish Support
+  - English/Español toggle added
+  - Core UI strings translated and structured for future localization
+
+Notes: Cycle 3 unified the project: the database became the source of truth connecting backend and frontend, enabling stable per-lot viewing. The UI redesign improved readability and user flow, and Spanish support expanded accessibility while keeping the app ready for additional languages later.
