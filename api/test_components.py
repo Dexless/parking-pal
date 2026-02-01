@@ -1,75 +1,59 @@
+# pytest -q
+
+import pytest
 import lot_helper as lh
 import lot_database as ldb
+from datetime import datetime
 import detection_database as ddb
 
-def testLotDB():
-    # Test Print Table Contents
-    ldb.printTableContents()
-    print("Successful Print of Table Contents")
-    print()
 
-    # Test Fetch All Lots
-    test1 = ldb.fetch_all_lots()
-    for lot in test1:
-        print(lot)
-    print("Successful Fetch of All Lots")
-    ldb.printTableContents()
-    print()
 
-    # Test Fetch Each Lot by ID
-    lots = lh.lot_dict()
-    for x in range(len(lots)):
-        lot = ldb.fetch_lot_by_id(x)
-        print(lot)
-    print("Successful Fetch of Each Lot by ID")
-    print()
-    ldb.printTableContents()
-    print()
+# Lot Database Tests (lot_database)
+def test_fetch_all_lots_returns_list():
+    lots = ldb.fetch_all_lots()
+    assert isinstance(lots, list), "fetch_all_lots() should return a list"
 
-    # Test Randomize all Lot Data
-    for x in range(len(lots)):
-        ldb.randomize_Lot_Data(x)
-    print("Successful Randomization of All Lot Data")
-    ldb.printTableContents()
 
-# Test detection_database functions
-def testDetectionDB():
-    from datetime import datetime
+def test_fetch_lot_by_id_for_all_known_lots():
+    lots_dict = lh.lot_dict()
+    assert isinstance(lots_dict, dict), "lh.lot_dict() should return a dict"
 
-    # Create Vehicle Entries
-    vehicle1 = ddb.Vehicle(dt=ddb.progress_time() + datetime.now(), is_entering=True, lot_id=0)
-    vehicle2 = ddb.Vehicle(dt=ddb.progress_time() + datetime.now(), is_entering=False, lot_id=1)
+    for lot_id in range(len(lots_dict)):
+        lot = ldb.fetch_lot_by_id(lot_id)
+        assert lot is not None, f"fetch_lot_by_id({lot_id}) returned None"
 
-    # Insert Vehicle Entries
+
+def test_randomize_lot_data_runs_without_error():
+    lots_dict = lh.lot_dict()
+    for lot_id in range(len(lots_dict)):
+        ldb.randomize_Lot_Data(lot_id)
+
+    lots = ldb.fetch_all_lots()
+    assert isinstance(lots, list)
+    assert len(lots) >= 0
+
+
+# Detection Database Tests (detection_database)
+def test_insert_and_fetch_vehicle_entries():
+    vehicle1 = ddb.Vehicle(
+        dt=ddb.progress_time() + datetime.now(),
+        is_entering=True,
+        lot_id=0
+    )
+    vehicle2 = ddb.Vehicle(
+        dt=ddb.progress_time() + datetime.now(),
+        is_entering=False,
+        lot_id=1
+    )
+
+    # Insert
     ddb.insert_vehicle_entry(vehicle1)
     ddb.insert_vehicle_entry(vehicle2)
 
-    print("Successful Insertion of Vehicle Entries")
-    print()
-    ldb.printTableContents()
-
-    # Fetch and print all vehicle entries
+    # Fetch
     vehicles = ddb.fetch_all_vehicle_entries()
-    for vehicle in vehicles:
-        print(vehicle)
+    assert isinstance(vehicles, list), "fetch_all_vehicle_entries() should return a list"
 
-    print("Successful Fetch of All Vehicle Entries")
-    print()
-    ldb.printTableContents()
-
-def startUVicorn():
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
-
-if __name__ == "__main__":
-    testLotDB()
-
-    print()
-    print("Starting Uvicorn Server...")
-    startUVicorn()
-
-    print("Api and Database Tests Complete!")
-
-    # testDetectionDB()
-    testDetectionDB()
-    print("Detection Database Tests Complete!")
+    # Best-effort membership checks (depends on how Vehicle is represented)
+    # If vehicles are returned as dicts/tuples/objects, adjust these assertions accordingly.
+    assert len(vehicles) >= 2, "Expected at least 2 vehicle entries after insertion"
