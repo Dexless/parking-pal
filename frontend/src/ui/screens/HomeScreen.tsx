@@ -17,10 +17,12 @@ const VIDEO_HEIGHT = 720;
 export default function HomeScreen({ navigation }: Props) {
     // translations for spanish
     const [lang, setLang] = useState<"en" | "es">(getLang());
+    const [langMenuOpen, setLangMenuOpen] = useState(false);
     // save selection
     function changeLang(newLang: "en" | "es") {
       saveLang(newLang);   // update global
       setLang(newLang);    // update screen UI
+      setLangMenuOpen(false);
     }
     
     // text translations
@@ -71,20 +73,34 @@ export default function HomeScreen({ navigation }: Props) {
         />
       </View>
 
-      <View style={styles.overlay} />
+      <View style={styles.overlay} pointerEvents="none" />
+
+      <View style={styles.langMenu}>
+        <Pressable
+          style={styles.langBtn}
+          onPress={() => setLangMenuOpen((prev) => !prev)}
+        >
+          <Text style={styles.langBtnText}>Language</Text>
+        </Pressable>
+        {langMenuOpen && (
+          <View style={styles.langDropdown}>
+            <Pressable
+              style={styles.langOption}
+              onPress={() => changeLang('en')}
+            >
+              <Text style={styles.langOptionText}>English</Text>
+            </Pressable>
+            <Pressable
+              style={styles.langOption}
+              onPress={() => changeLang('es')}
+            >
+              <Text style={styles.langOptionText}>Spanish</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
 
       <View style={styles.content}>
-        
-        <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", gap: 8 }}>
-          <Pressable onPress={() => changeLang("en")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
-            <Text style={{ color: "white" }}>EN</Text>
-          </Pressable>
-
-          <Pressable onPress={() => changeLang("es")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
-            <Text style={{ color: "white" }}>ES</Text>
-          </Pressable>
-        </View>
-
         <Text style={styles.title}>{text.title}</Text>
         <Text style={styles.subtitle}>{text.subtitle}</Text>
 
@@ -115,12 +131,50 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.45)',
+    zIndex: 1,
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    zIndex: 2,
+  },
+  langMenu: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    alignItems: 'flex-end',
+    zIndex: 3,
+  },
+  langBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#2b2b2b',
+    borderWidth: 1,
+    borderColor: '#3d3d3d',
+  },
+  langBtnText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  langDropdown: {
+    marginTop: 8,
+    backgroundColor: '#1f1f1f',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3d3d3d',
+    overflow: 'hidden',
+    minWidth: 140,
+  },
+  langOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  langOptionText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
   title: {
     fontSize: 28,

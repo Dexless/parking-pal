@@ -1,32 +1,26 @@
 // src/app/screens/MapScreen.tsx
-import React, { useEffect, useState } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Pressable, StyleSheet, Text } from 'react-native';
 import { LOTS } from '../data/campusLots';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
-import CampusStreets from '../../../assets/images/Campus_streets.svg';
-import CampusLots from '../../../assets/images/Campus_lots.svg';
-import CampusLotNames from '../../../assets/images/campus_lot_names.svg';
 import { useWindowDimensions } from 'react-native';
-import { fetchLotFullnessPercentages} from '../../api/lotApi';
+import MapboxView, { MapboxViewHandle } from '../MapboxView';
 
-// Color mapping for lot states
-const STATE_RGB: Record<string, [number, number, number]> = {
-  EMPTY: [61, 133, 198], // #3d85c6
-  LIGHT: [106, 168, 79], // #6aa84f
-  MEDIUM: [241, 194, 50], // #f1c232
-  HEAVY: [230, 145, 56], // #e69138
-  FULL: [204, 0, 0], // #cc0000
+const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
+const CAMPUS_ZOOM = 16.2;
+const CAMPUS_BOUNDS = {
+  sw: [-119.754931, 36.806739] as [number, number],
+  ne: [-119.741531, 36.817459] as [number, number],
 };
-
 
 // Main MapScreen component
 export default function MapScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [lotStates, setLotStates] = useState<{ [key: number]: string }>({});
+  const mapRef = useRef<MapboxViewHandle>(null);
 
   const { width, height } = useWindowDimensions();
   const MAP_ASPECT = 1692 / 1306;
@@ -45,64 +39,50 @@ export default function MapScreen() {
     frameHeight = maxHeight;
     frameWidth = frameHeight * MAP_ASPECT;
   }
-
-  // Fetch lot fullness percentages on start - func moved to lotApi.ts
-  useEffect(() => {
-    fetchLotFullnessPercentages().then((dict) => {
-      if (dict) setLotStates(dict);
-    });
-  }, []);
+  const scale = 0.88;
+  frameWidth *= scale;
+  frameHeight *= scale;
 
   return (
     <View style={styles.root}>
-      <View style={[styles.frame, { width: frameWidth, height: frameHeight }]}>
-        <CampusStreets width="100%" height="100%" />
-        <CampusLots // Campus lots SVG overlay
-          width="100%"
-          height="100%"
-          style={StyleSheet.absoluteFillObject}
-          pointerEvents="none"
-        />
-        <CampusLotNames // Campus lot names SVG overlay
-          width="100%"
-          height="100%"
-          style={StyleSheet.absoluteFillObject}
-          pointerEvents="none"
-          fill="#adadadff"
-        />
-
-        <View style={StyleSheet.absoluteFill}>
-          {LOTS.map(({ id, name, x, y, w, h }) => {
-            const state = lotStates[id];
-
-            let backgroundColor = 'rgba(0,123,255,0.28)';
-            let borderColor = 'rgba(0,123,255,0.75)';
-
-            if (state && STATE_RGB[state]) {
-              const [r, g, b] = STATE_RGB[state];
-              backgroundColor = `rgba(${r},${g},${b},0.28)`;
-              borderColor = `rgba(${r},${g},${b},0.75)`;
-            }
-
-            return (
-              <Pressable
-                key={id}
-                onPress={() => navigation.navigate('LotDetails', { lotId: id })}
-                accessibilityLabel={name}
-                style={[
-                  styles.block,
-                  {
-                    left: `${x * 100}%`,
-                    top: `${y * 100}%`,
-                    width: `${w * 100}%`,
-                    height: `${h * 100}%`,
-                    backgroundColor,
-                    borderColor,
-                  },
-                ]}
+      <View style={styles.contentRow}>
+        <View style={styles.leftColumn}>
+          <View style={styles.mapCard}>
+            <View
+              style={[styles.frame, { width: frameWidth, height: frameHeight }]}
+            >
+              <MapboxView
+                ref={mapRef}
+                style={StyleSheet.absoluteFillObject}
+                centerCoordinate={CAMPUS_CENTER}
+                zoomLevel={CAMPUS_ZOOM}
+                interactive
+                bounds={CAMPUS_BOUNDS}
               />
-            );
-          })}
+            </View>
+          </View>
+          <Pressable
+            style={styles.resetBtn}
+            onPress={() => mapRef.current?.reset()}
+          >
+            <Text style={styles.resetBtnText}>Reset View</Text>
+          </Pressable>
+        </View>
+        <View style={styles.rightColumn}>
+          <View style={styles.debugPanel}>
+            <Text style={styles.debugTitle}>Debug: Lots</Text>
+            <View style={styles.debugRow}>
+              {LOTS.map(({ id, name }) => (
+                <Pressable
+                  key={id}
+                  style={styles.debugBtn}
+                  onPress={() => navigation.navigate('LotDetails', { lotId: id })}
+                >
+                  <Text style={styles.debugBtnText}>{name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </View>
       </View>
     </View>
@@ -117,13 +97,80 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    width: '100%',
+    maxWidth: 1100,
+    justifyContent: 'center',
+  },
+  leftColumn: {
+    alignItems: 'center',
+  },
+  rightColumn: {
+    alignItems: 'flex-start',
+  },
   frame: { // Map frame styles definition
     alignSelf: 'center',
     position: 'relative',
-  },
-  block: { // Lot block styles definition
-    position: 'absolute',
+    borderRadius: 16,
     borderWidth: 1,
-    borderRadius: 4,
+    borderColor: '#2f2f2f',
+    overflow: 'hidden',
+    backgroundColor: '#1f1f1f',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  mapCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 8,
+  },
+  resetBtn: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#2b2b2b',
+    borderWidth: 1,
+    borderColor: '#3d3d3d',
+    alignSelf: 'center',
+  },
+  resetBtnText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+  },
+  debugPanel: {
+    marginTop: 0,
+    width: 180,
+  },
+  debugTitle: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  debugRow: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  debugBtn: {
+    width: 120,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#2b2b2b',
+    borderWidth: 1,
+    borderColor: '#3d3d3d',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  debugBtnText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
 });
