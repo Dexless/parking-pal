@@ -8,7 +8,7 @@ import { LOTS } from '../data/campusLots';
 import { fetchLotData, Lot as LotData, randomizeData } from '../../api/lotApi';
 import { COLORS } from './colors';
 import MapboxView from '../MapboxView';
-import { getLang, setLang as saveLang } from "../../langSave";
+import { getLang } from "../../langSave";
 
 
 // Define route prop type for LotDetails screen
@@ -18,26 +18,6 @@ type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
 const MAP_ASPECT = 1692 / 1306;
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
-
-type LotZoom = {
-  centerX: number; // normalized 0–1 (relative to map width)
-  centerY: number; // normalized 0–1 (relative to map height)
-  scale: number;
-};
-
-// Predefined zooms for each lot ID
-const LOT_ZOOMS: Record<number, LotZoom> = {
-  0:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P1
-  1:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P2
-  2:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P3
-  3:  { centerX: 0.3401, centerY: 0.3307, scale: 1.8 }, // P5
-  4:  { centerX: 0.3401, centerY: 0.2307, scale: 1.8 }, // P6
-  5:  { centerX: 0.4701, centerY: 0.1907, scale: 1.8 }, // P9
-  7:  { centerX: 0.4701, centerY: 0.1907, scale: 1.8 }, // P11
-  9:  { centerX: 0.2722, centerY: 0.1700, scale: 2.0 }, // P15
-  10: { centerX: 0.1200, centerY: 0.1000, scale: 1.8 }, // P20
-  11: { centerX: 0.1401, centerY: 0.4007, scale: 1.8 }, // P27
-};
 
 const STATE_RGB: Record<string, [number, number, number]> = {
   EMPTY: [61, 133, 198],
@@ -49,12 +29,7 @@ const STATE_RGB: Record<string, [number, number, number]> = {
 
 export default function LotDetailsScreen() {
   // translations for spanish
-  const [lang, setLang] = useState<"en" | "es">(getLang());
-  // save selection
-  function updateLanguage(newLang: "en" | "es") {
-    saveLang(newLang);   // saves globally
-    setLang(newLang);    // updates UI
-  }
+  const [lang] = useState<"en" | "es">(getLang());
 
   const text = {
     capacitySubtitle:
@@ -392,3 +367,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

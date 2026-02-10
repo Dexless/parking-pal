@@ -6,6 +6,13 @@ export type MapboxViewHandle = {
   reset: () => void;
 };
 
+export type MapboxMarker = {
+  id: number;
+  name: string;
+  coordinate: [number, number];
+  detail?: string;
+};
+
 type MapboxViewProps = {
   style?: StyleProp<ViewStyle>;
   centerCoordinate: [number, number];
@@ -16,6 +23,8 @@ type MapboxViewProps = {
     ne: [number, number];
     sw: [number, number];
   };
+  markers?: MapboxMarker[];
+  onMarkerPress?: (id: number) => void;
 };
 
 const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
