@@ -1,6 +1,12 @@
-Frontend Setup
+Frontend
 1. open a terminal and change directory to folder: 'cd frontend'
 2. 'npm install
 3. 'npx expo start'
-4. scan the QR code using Expo Go (download app if needed) on iPhone.
-The app includes a place-holder home screen and map view of Fresno State. 
+
+Backend
+1. open a terminal and change directory to folder: 'cd api'
+2. create a venv with python -m venv .venv
+4. activate venv cd into .venv/Scripts and run activate
+5. cd back to api
+3. pip install -r requirements.txt
+4. run "fastapi dev main.py"
