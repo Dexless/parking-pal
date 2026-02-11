@@ -1,5 +1,7 @@
 # Parking Pal
 
+[Link to Parking Pal Testing Documentation](https://docs.google.com/spreadsheets/d/1uBCT0pl8fy2EWj7oTAVGg5JiVK4HbAunM675UnKDHzk/edit?usp=sharing)
+
 ### Description:
 
 Parking Pal is a comprehensive parking application to systematically store information regarding parking at institutions with impacted infrastructure.
