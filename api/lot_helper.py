@@ -1,6 +1,14 @@
+import os
+from pathlib import Path
+
 import psycopg2
+from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import Literal
+
+load_dotenv()
+load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # Enforce types with BModels
 class Lot(BaseModel):
@@ -60,21 +68,27 @@ def update_lots_current(is_entering: bool, lot_id: int):
 
 # Do NOT publically post password to public GitHub
 class DB_Credentials:
-    DB_HOST = "localhost"
-    DB_NAME = "parkingpal_db"
-    DB_USER = "postgres"
-    DB_PASS = "parking-pal"
-    DB_PORT = "5432"
+    DB_HOST = os.getenv("DB_HOST", "localhost")
+    DB_NAME = os.getenv("DB_NAME", "parkingpal_db")
+    DB_USER = os.getenv("DB_USER", "postgres")
+    DB_PASS = os.getenv("DB_PASS", "parking-pal")
+    DB_PORT = os.getenv("DB_PORT", "5432")
+    DB_SSLMODE = os.getenv("DB_SSLMODE", "prefer")
 
 def establish_connection():
     db = DB_Credentials()
-    connection = psycopg2.connect(
-        host=db.DB_HOST,
-        database=db.DB_NAME,
-        user=db.DB_USER,
-        password=db.DB_PASS,
-        port=db.DB_PORT
-    )
+    connection_kwargs = {
+        "host": db.DB_HOST,
+        "database": db.DB_NAME,
+        "user": db.DB_USER,
+        "password": db.DB_PASS,
+        "port": db.DB_PORT,
+    }
+
+    if db.DB_SSLMODE:
+        connection_kwargs["sslmode"] = db.DB_SSLMODE
+
+    connection = psycopg2.connect(**connection_kwargs)
     return connection
 
 #VERY DANGEROUS - Only for testing purposes

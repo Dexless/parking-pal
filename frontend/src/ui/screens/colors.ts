@@ -1,8 +1,8 @@
 // src/app/theme/colors.ts
 export const COLORS = {
-  bg: '#0f172a',        
-  card: '#0b1220',     
-  textPrimary: '#94a3b8',
-  textSecondary: '#e5e7eb',
-  accent: '#3a3a3aff',
+  bg: '#292929',
+  card: '#1f1f1f',
+  textPrimary: '#a8a8a8',
+  textSecondary: '#878787',
+  accent: '#3d3d3d',
 };

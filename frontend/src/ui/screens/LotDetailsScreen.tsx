@@ -5,12 +5,10 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
 import { LOTS } from '../data/campusLots';
-import { fetchLotData, Lot as LotData, randomizeData, fetchLotFullnessPercentages } from '../../api/lotApi';
+import { fetchLotData, Lot as LotData, randomizeData } from '../../api/lotApi';
 import { COLORS } from './colors';
-import CampusStreets from '../../../assets/images/Campus_streets.svg';
-import CampusLots from '../../../assets/images/Campus_lots.svg';
-import CampusLotNames from '../../../assets/images/campus_lot_names.svg';
-import { getLang, setLang as saveLang } from "../../langSave";
+import MapboxView from '../MapboxView';
+import { getLang } from "../../langSave";
 
 
 // Define route prop type for LotDetails screen
@@ -18,26 +16,8 @@ type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
 
 // Aspect ratio of the campus map
 const MAP_ASPECT = 1692 / 1306;
-
-type LotZoom = {
-  centerX: number; // normalized 0–1 (relative to map width)
-  centerY: number; // normalized 0–1 (relative to map height)
-  scale: number;
-};
-
-// Predefined zooms for each lot ID
-const LOT_ZOOMS: Record<number, LotZoom> = {
-  0:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P1
-  1:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P2
-  2:  { centerX: 0.3401, centerY: 0.4007, scale: 1.8 }, // P3
-  3:  { centerX: 0.3401, centerY: 0.3307, scale: 1.8 }, // P5
-  4:  { centerX: 0.3401, centerY: 0.2307, scale: 1.8 }, // P6
-  5:  { centerX: 0.4701, centerY: 0.1907, scale: 1.8 }, // P9
-  7:  { centerX: 0.4701, centerY: 0.1907, scale: 1.8 }, // P11
-  9:  { centerX: 0.2722, centerY: 0.1700, scale: 2.0 }, // P15
-  10: { centerX: 0.1200, centerY: 0.1000, scale: 1.8 }, // P20
-  11: { centerX: 0.1401, centerY: 0.4007, scale: 1.8 }, // P27
-};
+const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
+const CAMPUS_ZOOM = 16.2;
 
 const STATE_RGB: Record<string, [number, number, number]> = {
   EMPTY: [61, 133, 198],
@@ -49,12 +29,7 @@ const STATE_RGB: Record<string, [number, number, number]> = {
 
 export default function LotDetailsScreen() {
   // translations for spanish
-  const [lang, setLang] = useState<"en" | "es">(getLang());
-  // save selection
-  function updateLanguage(newLang: "en" | "es") {
-    saveLang(newLang);   // saves globally
-    setLang(newLang);    // updates UI
-  }
+  const [lang] = useState<"en" | "es">(getLang());
 
   const text = {
     capacitySubtitle:
@@ -86,7 +61,6 @@ export default function LotDetailsScreen() {
 
   const lot = useMemo(() => LOTS.find(l => l.id === lotId), [lotId]);
   const [lotData, setLotData] = useState<LotData | null>(null);
-  const [lotStates, setLotStates] = useState<{ [key: number]: string }>({});
 
   //Fetch lot data from API, if it fails, call randomize endpoint
   useEffect(() => {
@@ -96,12 +70,6 @@ export default function LotDetailsScreen() {
         randomizeData(lotId);
       });
   }, [lotId]);
-
-  useEffect(() => {
-    fetchLotFullnessPercentages().then((dict) => {
-      if (dict) setLotStates(dict);
-    });
-  }, []);
 
   // Math
   const total = lotData?.total_capacity ?? null;
@@ -139,16 +107,6 @@ export default function LotDetailsScreen() {
       <View style={styles.screen}>
         <View style={styles.contentRow}>
           <View style={styles.leftPane}>
-
-            <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-              <Pressable onPress={() => updateLanguage("en")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
-                <Text style={{ color: "white" }}>EN</Text>
-              </Pressable>
-
-              <Pressable onPress={() => updateLanguage("es")} style={{ padding: 6, backgroundColor: "#333", borderRadius: 6 }}>
-                <Text style={{ color: "white" }}>ES</Text>
-              </Pressable>
-            </View>
 
             <Text style={styles.title}>{text.notFound}</Text>
             <Pressable
@@ -233,107 +191,18 @@ export default function LotDetailsScreen() {
             </View>
           </View>
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: 16,
-              width: "100%",
-            }}
-          >
-
-            <Pressable  // back button to go to map
-              style={[styles.btn, styles.backBtn]}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.btnText}>{text.back}</Text>
-            </Pressable>
-
-            <View style={{ flexDirection: "row", gap: 8 }}>   
-              <Pressable
-                onPress={() => updateLanguage("en")}   // enlish button
-                style={{
-                  width: 36,
-                  height: 36,
-                  backgroundColor: "#333",
-                  borderRadius: 6,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "white", fontWeight: "600" }}>EN</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => updateLanguage("es")}   // spanish button
-                style={{
-                  width: 36,
-                  height: 36,
-                  backgroundColor: "#333",
-                  borderRadius: 6,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "white", fontWeight: "600" }}>ES</Text>
-              </Pressable>
-            </View>
-          </View>
-
         </View>
 
         <View style={styles.rightPane}>
-          <View style={styles.card}>
+          <View style={[styles.card, styles.mapCard]}>
             <View style={styles.mapOuter}>
               <View style={styles.mapInner}>
-                <CampusStreets width="100%" height="100%" />
-                <CampusLots
-                  width="100%"
-                  height="100%"
+                <MapboxView
                   style={StyleSheet.absoluteFillObject}
+                  centerCoordinate={CAMPUS_CENTER}
+                  zoomLevel={CAMPUS_ZOOM}
+                  pointerEvents="none"
                 />
-                <CampusLotNames
-                  width="100%"
-                  height="100%"
-                  style={StyleSheet.absoluteFillObject}
-                  fill="#adadadff"
-                />
-                <View style={StyleSheet.absoluteFill}>
-                  {LOTS.map(({ id, name, x, y, w, h }) => {
-                    const state = lotStates[id];
-
-                    let backgroundColor = 'rgba(0,123,255,0.28)';
-                    let borderColor = 'rgba(0,123,255,0.75)';
-
-                    if (state && STATE_RGB[state]) {
-                      const [r, g, b] = STATE_RGB[state];
-                      backgroundColor = `rgba(${r},${g},${b},0.28)`;
-                      borderColor = `rgba(${r},${g},${b},0.75)`;
-                    }
-
-                    return (
-                      <Pressable
-                        key={id}
-                        onPress={() =>
-                          navigation.navigate('LotDetails', { lotId: id })
-                        }
-                        accessibilityLabel={name}
-                        style={[
-                          styles.block,
-                          {
-                            left: `${x * 100}%`,
-                            top: `${y * 100}%`,
-                            width: `${w * 100}%`,
-                            height: `${h * 100}%`,
-                            backgroundColor,
-                            borderColor,
-                          },
-                        ]}
-                      />
-                    );
-                  })}
-                </View>
               </View>
             </View>
           </View>
@@ -406,6 +275,9 @@ const styles = StyleSheet.create({
     elevation: 8,
     width: '100%',
   },
+  mapCard: {
+    padding: 8,
+  },
   bigRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -422,19 +294,19 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: '#020617',
+    borderColor: '#3d3d3d',
+    backgroundColor: '#1f1f1f',
   },
   pillText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: COLORS.textSecondary,
   },
   bar: {
     height: 16,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: '#111827',
+    borderColor: '#3d3d3d',
+    backgroundColor: '#242424',
     overflow: 'hidden',
     marginBottom: 14,
   },
@@ -452,14 +324,14 @@ const styles = StyleSheet.create({
     flexBasis: '48%',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#3d3d3d',
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: '#020617',
+    backgroundColor: '#1f1f1f',
   },
   statLabel: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: COLORS.textSecondary,
     marginBottom: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -494,9 +366,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
   },
-  block: { // Lot block styles definition
-    position: 'absolute',
-    borderWidth: 1,
-    borderRadius: 4,
-  },
 });
+
