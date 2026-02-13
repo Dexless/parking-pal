@@ -3,3 +3,5 @@
 /.env
 !.env.example
 /frontend/.env
+/frontend/npm
+/frontend/20.19.4'

@@ -6,7 +6,7 @@ const token =
 
 if (!token) {
   console.warn(
-    'Missing EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN. Set it in root .env and restart Expo.'
+    'Missing EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN. Set it in frontend/.env (or shell env) and restart Expo.'
   );
 } else {
   Mapbox.setAccessToken(token);
