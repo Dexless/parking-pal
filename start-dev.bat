@@ -19,9 +19,29 @@ if not exist "%FRONTEND_DIR%" (
 )
 
 if not exist "%VENV_PY%" (
-  echo [ERROR] Could not find venv Python at "%VENV_PY%"
-  echo Create it with: python -m venv "%API_DIR%\.venv"
-  exit /b 1
+  echo [INFO] No virtual environment found. Creating "%API_DIR%\.venv"...
+  python -m venv "%API_DIR%\.venv"
+  if errorlevel 1 (
+    echo [ERROR] Failed to create virtual environment.
+    exit /b 1
+  )
+
+  if not exist "%VENV_PY%" (
+    echo [ERROR] Could not find venv Python at "%VENV_PY%" after creation.
+    exit /b 1
+  )
+
+  if not exist "%API_DIR%\requirements.txt" (
+    echo [ERROR] Could not find "%API_DIR%\requirements.txt"
+    exit /b 1
+  )
+
+  echo [INFO] Installing API dependencies from requirements.txt...
+  "%VENV_PY%" -m pip install -r "%API_DIR%\requirements.txt"
+  if errorlevel 1 (
+    echo [ERROR] Failed to install dependencies from requirements.txt.
+    exit /b 1
+  )
 )
 
 start "FastAPI Dev" /D "%API_DIR%" cmd /k ""%VENV_PY%" -m fastapi dev main.py"
