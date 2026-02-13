@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from typing import Literal
 
 load_dotenv()
-load_dotenv(Path(__file__).resolve().parent / ".env")
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # Enforce types with BModels
@@ -66,38 +65,26 @@ def update_lots_current(is_entering: bool, lot_id: int):
     connection.close()
 
 
-# Do NOT publically post password to public GitHub
+
 class DB_Credentials:
-    DB_HOST = os.getenv("DB_HOST", "localhost")
-    DB_NAME = os.getenv("DB_NAME", "parkingpal_db")
-    DB_USER = os.getenv("DB_USER", "postgres")
-    DB_PASS = os.getenv("DB_PASS", "parking-pal")
+    DB_HOST = os.getenv("DB_HOST")
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASS = os.getenv("DB_PASS")
     DB_PORT = os.getenv("DB_PORT", "5432")
-    DB_SSLMODE = os.getenv("DB_SSLMODE", "prefer")
+    DB_SSLMODE = os.getenv("DB_SSLMODE", "require")
 
 def establish_connection():
     db = DB_Credentials()
-    connection_kwargs = {
-        "host": db.DB_HOST,
-        "database": db.DB_NAME,
-        "user": db.DB_USER,
-        "password": db.DB_PASS,
-        "port": db.DB_PORT,
-    }
+    if not all([db.DB_HOST, db.DB_NAME, db.DB_USER, db.DB_PASS]):
+        raise RuntimeError("Missing DB env vars (DB_HOST/DB_NAME/DB_USER/DB_PASS). Check your .env loading.")
 
-    if db.DB_SSLMODE:
-        connection_kwargs["sslmode"] = db.DB_SSLMODE
-
-    connection = psycopg2.connect(**connection_kwargs)
+    connection = psycopg2.connect(
+        host=db.DB_HOST,
+        database=db.DB_NAME,
+        user=db.DB_USER,
+        password=db.DB_PASS,
+        port=db.DB_PORT,
+        sslmode=db.DB_SSLMODE,
+    )
     return connection
-
-#VERY DANGEROUS - Only for testing purposes
-def clearTable(table: str):
-    connection = establish_connection()
-    cursor = connection.cursor()
-
-    cursor.execute(f"TRUNCATE TABLE {table};")
-    connection.commit()
-
-    cursor.close()
-    connection.close()

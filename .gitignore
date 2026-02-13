@@ -1,6 +1,5 @@
 /react
-FileNames.py
 /api/.venv
-.env
-api/.env
-start-dev.bat
+/.env
+!.env.example
+/frontend/.env

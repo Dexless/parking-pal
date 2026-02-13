@@ -49,14 +49,18 @@ def fetch_all_lots():
 
     return joined_data
 
-def fetch_lot_by_id(lot_id: int) -> lh.Lot:
+def fetch_lot_by_id(lot_id: int):
     connection = lh.establish_connection()
     cursor = connection.cursor()
 
-    # For some reason lot_id requires , even though it's a single param
-    cursor.execute("SELECT * FROM lots WHERE lot_id = %s;", (lot_id,))
+    cursor.execute("""
+        SELECT lot_id, lot_name, total_capacity, current, type, hours
+        FROM lots
+        WHERE lot_id = %s;
+    """, (lot_id,))
+
     row = cursor.fetchone()
-    
+
     cursor.close()
     connection.close()
 
@@ -64,15 +68,16 @@ def fetch_lot_by_id(lot_id: int) -> lh.Lot:
         return None
 
     lot = lh.Lot(
-    lot_id = row[0],
-    lot_name = row[1],
-    total_capacity = row[2],
-    current = row[3],
-    type = row[4],      
-    hours = row[5]
+        lot_id=row[0],
+        lot_name=row[1],
+        total_capacity=row[2],
+        current=row[3],
+        type=row[4],
+        hours=row[5]
     )
 
     return lot
+
 
 def fetch_lot_by_name(lot_name: str) -> lh.Lot:
     connection = lh.establish_connection()
