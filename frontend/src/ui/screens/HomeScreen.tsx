@@ -1,13 +1,13 @@
 // src/ui/screens/HomeScreen.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
 import { Video } from 'expo-av';
-import { useEffect, useState } from 'react';
-import { randomize_all_lot_events } from '../../api/lotApi';
+import { randomize_all_lot_events } from '../../api/api';
 import { getLang, setLang as saveLang } from "../../langSave";
+import { useAuth } from '../AuthContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -15,6 +15,7 @@ const VIDEO_WIDTH = 1280;
 const VIDEO_HEIGHT = 720;
 
 export default function HomeScreen({ navigation }: Props) {
+    const { loggedIn } = useAuth();
     // translations for spanish
     const [lang, setLang] = useState<"en" | "es">(getLang());
     const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -30,6 +31,7 @@ export default function HomeScreen({ navigation }: Props) {
       title: lang === "en" ? "Parking Pal" : "Parking Pal",
       subtitle: lang === "en" ? "Find campus parking fast." : "Encuentra estacionamiento rápidamente.",
       openMap: lang === "en" ? "Open Map" : "Abrir Mapa",
+      login: lang === "en" ? "Login" : "Iniciar sesion",
     };
 
     useEffect(() => {
@@ -75,29 +77,37 @@ export default function HomeScreen({ navigation }: Props) {
 
       <View style={styles.overlay} pointerEvents="none" />
 
-      <View style={styles.langMenu}>
-        <Pressable
-          style={styles.langBtn}
-          onPress={() => setLangMenuOpen((prev) => !prev)}
-        >
-          <Text style={styles.langBtnText}>Language</Text>
-        </Pressable>
-        {langMenuOpen && (
-          <View style={styles.langDropdown}>
-            <Pressable
-              style={styles.langOption}
-              onPress={() => changeLang('en')}
-            >
-              <Text style={styles.langOptionText}>English</Text>
-            </Pressable>
-            <Pressable
-              style={styles.langOption}
-              onPress={() => changeLang('es')}
-            >
-              <Text style={styles.langOptionText}>Spanish</Text>
-            </Pressable>
-          </View>
-        )}
+      <View style={styles.topBar}>
+        {!loggedIn ? (
+          <Pressable style={styles.loginBtn} onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.loginBtnText}>{text.login}</Text>
+          </Pressable>
+        ) : null}
+
+        <View style={styles.langMenu}>
+          <Pressable
+            style={styles.langBtn}
+            onPress={() => setLangMenuOpen((prev) => !prev)}
+          >
+            <Text style={styles.langBtnText}>Language</Text>
+          </Pressable>
+          {langMenuOpen && (
+            <View style={styles.langDropdown}>
+              <Pressable
+                style={styles.langOption}
+                onPress={() => changeLang('en')}
+              >
+                <Text style={styles.langOptionText}>English</Text>
+              </Pressable>
+              <Pressable
+                style={styles.langOption}
+                onPress={() => changeLang('es')}
+              >
+                <Text style={styles.langOptionText}>Spanish</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -141,11 +151,30 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   langMenu: {
+    alignItems: 'flex-end',
+    zIndex: 4,
+  },
+  topBar: {
     position: 'absolute',
     top: 16,
     right: 16,
-    alignItems: 'flex-end',
-    zIndex: 3,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    gap: 12,
+    zIndex: 4,
+  },
+  loginBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#2b2b2b',
+    borderWidth: 1,
+    borderColor: '#3d3d3d',
+  },
+  loginBtnText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
   },
   langBtn: {
     paddingVertical: 8,

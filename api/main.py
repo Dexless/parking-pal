@@ -2,13 +2,20 @@
 # Swagger: http://127.0.0.1:8000/docs
 from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
+import os
+import httpx
 import lot_helper as lh
 import lot_database as ldb
 import detection_database as ddb
 import pin_database as pdb
 
 app = FastAPI(title="ParkingPal API")
+
+class UserCredentials(BaseModel):
+    email: EmailStr
+    password: str
 
 # compute crowd state
 def full_type(p: float) -> str:
@@ -52,6 +59,56 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "Welcome to the ParkingPal API!"}
+
+@app.post("/auth/login")
+async def login(user_credentials: UserCredentials):
+    supabase_url = os.getenv("EXPO_PUBLIC_SUPABASE_URL")
+    supabase_anon_key = os.getenv("EXPO_PUBLIC_SUPABASE_ANON_KEY")
+    supabase_auth_url = f"{supabase_url}/auth/v1/token?grant_type=password"
+    async with httpx.AsyncClient() as client:
+        supabase_response = await client.post(
+            supabase_auth_url,
+            headers={
+                "apikey": supabase_anon_key,
+                "Authorization": f"Bearer {supabase_anon_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "email": user_credentials.email,
+                "password": user_credentials.password,
+            },
+        )
+
+    response_data = supabase_response.json()
+    if supabase_response.status_code >= 400:
+        raise HTTPException(status_code=supabase_response.status_code, detail=response_data)
+
+    return response_data
+
+@app.post("/auth/register")
+async def register(user_credentials: UserCredentials):
+    supabase_url = os.getenv("EXPO_PUBLIC_SUPABASE_URL")
+    supabase_anon_key = os.getenv("EXPO_PUBLIC_SUPABASE_ANON_KEY")
+    supabase_auth_url = f"{supabase_url}/auth/v1/signup"
+    async with httpx.AsyncClient() as client:
+        supabase_response = await client.post(
+            supabase_auth_url,
+            headers={
+                "apikey": supabase_anon_key,
+                "Authorization": f"Bearer {supabase_anon_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "email": user_credentials.email,
+                "password": user_credentials.password,
+            },
+        )
+
+    response_data = supabase_response.json()
+    if supabase_response.status_code >= 400:
+        raise HTTPException(status_code=supabase_response.status_code, detail=response_data)
+
+    return response_data
 
 # Returns all lots that match the given filters
 # Filters by optional name/ID search and lot type

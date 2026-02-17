@@ -10,6 +10,8 @@ load_dotenv()
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # Enforce types with BModels
+
+# lot class with limited info
 class Lot(BaseModel):
     lot_id: int
     lot_name: str

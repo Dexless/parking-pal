@@ -5,10 +5,11 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
 import { LOTS } from '../data/campusLots';
-import { fetchLotData, Lot as LotData, randomizeData } from '../../api/lotApi';
+import { fetchLotData, Lot as LotData, randomizeData } from '../../api/api';
 import { COLORS } from './colors';
 import MapboxView from '../MapboxView';
 import { getLang } from "../../langSave";
+import { useAuth } from '../AuthContext';
 
 
 // Define route prop type for LotDetails screen
@@ -28,6 +29,7 @@ const STATE_RGB: Record<string, [number, number, number]> = {
 };
 
 export default function LotDetailsScreen() {
+  const { loggedIn } = useAuth();
   // translations for spanish
   const [lang] = useState<"en" | "es">(getLang());
 
@@ -70,6 +72,20 @@ export default function LotDetailsScreen() {
         randomizeData(lotId);
       });
   }, [lotId]);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: loggedIn
+        ? undefined
+        : () => (
+            <View style={styles.headerLoginWrap}>
+              <Pressable onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.headerLoginText}>Login</Text>
+              </Pressable>
+            </View>
+          ),
+    });
+  }, [loggedIn, navigation]);
 
   // Math
   const total = lotData?.total_capacity ?? null;
@@ -223,6 +239,14 @@ const styles = StyleSheet.create({
   contentRow: {
     flexDirection: 'row',
     width: '85%',
+  },
+  headerLoginText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+  },
+  headerLoginWrap: {
+    marginRight: 12,
   },
   leftPane: { // Left pane styles definition
     flex: 1,

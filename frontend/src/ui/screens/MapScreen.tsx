@@ -1,14 +1,14 @@
 // src/app/screens/MapScreen.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Text } from 'react-native';
+import { View, Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 import { LOTS } from '../data/campusLots';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
-import { useWindowDimensions } from 'react-native';
 import MapboxView, { MapboxMarker, MapboxViewHandle } from '../MapboxView';
-import { fetchLotData, Lot as LotData } from '../../api/lotApi';
+import { fetchLotData, Lot as LotData } from '../../api/api';
+import { useAuth } from '../AuthContext';
 
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
@@ -22,6 +22,7 @@ const P20_ID = 10;
 export default function MapScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { loggedIn } = useAuth();
   const mapRef = useRef<MapboxViewHandle>(null);
   const [p20Data, setP20Data] = useState<LotData | null>(null);
 
@@ -51,6 +52,20 @@ export default function MapScreen() {
       .then(setP20Data)
       .catch(() => setP20Data(null));
   }, []);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: loggedIn
+        ? undefined
+        : () => (
+            <View style={styles.headerLoginWrap}>
+              <Pressable onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.headerLoginText}>Login</Text>
+              </Pressable>
+            </View>
+          ),
+    });
+  }, [loggedIn, navigation]);
 
   const p20Fullness = useMemo(() => {
     if (!p20Data) return 'Loading…';
@@ -138,6 +153,14 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerLoginText: {
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+  },
+  headerLoginWrap: {
+    marginRight: 12,
   },
   contentRow: {
     flexDirection: 'row',

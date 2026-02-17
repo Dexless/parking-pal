@@ -4,12 +4,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './screens/HomeScreen';
 import MapScreen from './screens/MapScreen';
 import LotDetailsScreen from './screens/LotDetailsScreen';
+import LoginScreen from './screens/LoginScreen';
 import { COLORS } from './screens/colors';
 
 // Define the type for the root stack parameters
 export type RootStackParamList = {
   Home: undefined;
   Map: undefined;
+  Login: undefined;
   Lotinfo: undefined;
   LotDetails: { lotId: number };
 };
@@ -40,6 +42,11 @@ export default function RootNavigator() {
         name="Map"
         component={MapScreen}
         options={{ title: 'Campus Map' }}
+      />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ title: 'Login' }}
       />
       <Stack.Screen // Lot details screen
         name="LotDetails"
