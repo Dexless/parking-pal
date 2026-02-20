@@ -1,6 +1,11 @@
 from random import random
 import lot_helper as lh
 
+'''
+Quite a bit of technical debt stacking up here, idealy, we would probably have a fast call to a specific attribute (col) 
+or a record from a specific lot (row). There's a bit of mix and matching and overlapping here.
+'''
+
 def printTableContents():
     connection = lh.establish_connection()
     cursor = connection.cursor()
@@ -49,15 +54,13 @@ def fetch_all_lots():
 
     return joined_data
 
+# Fetch lot by id is used on the frontend, a caching approach would help reduce need to recall EXPENSIVE
 def fetch_lot_by_id(lot_id: int):
     connection = lh.establish_connection()
     cursor = connection.cursor()
 
-    cursor.execute("""
-        SELECT lot_id, lot_name, total_capacity, current, type, hours
-        FROM lots
-        WHERE lot_id = %s;
-    """, (lot_id,))
+
+    cursor.execute("SELECT lot_id, lot_name, total_capacity, current, type, hours FROM lots WHERE lot_id = %s;", (lot_id,)) # Psycopg2 does NOT like f string
 
     row = cursor.fetchone()
 
@@ -103,6 +106,29 @@ def fetch_lot_by_name(lot_name: str) -> lh.Lot:
     )
 
     return lot
+
+# Faster call 
+def fetch_lot_percent_full():
+    connection = lh.establish_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT lot_id, current, total_capacity FROM lots")
+    rows = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    res = []
+    for r in rows:
+        id = r[0]
+        curr = r[1]
+        cap = r[2]
+
+        percent_full = round(100.0 * curr / cap, 1) if cap > 0 else 0.0
+
+        res.append(lh.LotPercentFull(lot_id=id, percent_full=percent_full))
+    return res
+
 
 def rand_capacity():
     return int(random() * 500) + 50

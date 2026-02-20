@@ -72,6 +72,11 @@ export interface Lot {
   hours: string;
 }
 
+export interface LotPercentFull {
+  lot_id: number;
+  percent_full: number;
+}
+
 export async function fetchLotData(lot_id: number) {
   return apiClient.get<Lot>(`/lots/${lot_id}`);
 }
@@ -81,12 +86,20 @@ export async function randomizeData(lot_id: number) {
 }
 
 export async function fetchLotFullnessPercentages() {
-  const lotStates = await apiClient.get<string[]>("/lots_percent_full");
-  const lotStateByIndex: { [key: number]: string } = {};
-  lotStates.forEach((percent, index) => {
-    lotStateByIndex[index] = percent;
+  const rows = await apiClient.get<LotPercentFull[]>("/lots_percent_full");
+  const mapped: Record<string, number> = {};
+  rows.forEach((row) => {
+    if (
+      typeof row?.lot_id !== "number" ||
+      !Number.isFinite(row.lot_id) ||
+      typeof row?.percent_full !== "number" ||
+      !Number.isFinite(row.percent_full)
+    ) {
+      return;
+    }
+    mapped[String(row.lot_id)] = Math.max(0, Math.min(100, row.percent_full));
   });
-  return lotStateByIndex;
+  return mapped;
 }
 
 export async function randomize_all_lot_events(

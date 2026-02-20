@@ -4,10 +4,15 @@ import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { View } from 'react-native';
+import {
+  buildLotPolygonGeoJson,
+  DEFAULT_LOT_POLYGON_GEOJSON,
+} from './mapLotGeoJson';
 
 export type MapboxViewHandle = {
   reset: () => void;
@@ -32,6 +37,51 @@ type MapboxViewProps = {
   };
   markers?: MapboxMarker[];
   onMarkerPress?: (id: number) => void;
+  lotFullnessById?: Record<string, number>;
+};
+
+const GEOJSON_SOURCE_ID = 'parking-pal-geojson-source';
+const GEOJSON_FILL_LAYER_ID = 'parking-pal-geojson-fill';
+const GEOJSON_LINE_LAYER_ID = 'parking-pal-geojson-line';
+
+const ensureGeoJsonLayer = (map: mapboxgl.Map) => {
+  if (!map.getSource(GEOJSON_SOURCE_ID)) {
+    map.addSource(GEOJSON_SOURCE_ID, {
+      type: 'geojson',
+      data: DEFAULT_LOT_POLYGON_GEOJSON as GeoJSON.FeatureCollection,
+    });
+  }
+  if (!map.getLayer(GEOJSON_FILL_LAYER_ID)) {
+    map.addLayer({
+      id: GEOJSON_FILL_LAYER_ID,
+      type: 'fill',
+      source: GEOJSON_SOURCE_ID,
+      paint: {
+        'fill-color': [
+          'case',
+          ['==', ['get', 'percent_full'], null], '#4b5563',
+          ['>=', ['get', 'percent_full'], 95], '#cc0000',
+          ['>=', ['get', 'percent_full'], 85], '#e69138',
+          ['>=', ['get', 'percent_full'], 60], '#f1c232',
+          ['>=', ['get', 'percent_full'], 30], '#6aa84f',
+          '#3d85c6',
+        ],
+        'fill-opacity': 0.5,
+      },
+    });
+  }
+  if (!map.getLayer(GEOJSON_LINE_LAYER_ID)) {
+    map.addLayer({
+      id: GEOJSON_LINE_LAYER_ID,
+      type: 'line',
+      source: GEOJSON_SOURCE_ID,
+      paint: {
+        'line-color': '#f3f4f6',
+        'line-width': 1.5,
+        'line-opacity': 0.9,
+      },
+    });
+  }
 };
 
 const token =
@@ -55,13 +105,19 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
       bounds,
       markers,
       onMarkerPress,
+      lotFullnessById,
     },
     ref
   ) => {
     const containerRef = useRef<any>(null);
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<mapboxgl.Marker[]>([]);
+    const lotPopupRef = useRef<mapboxgl.Popup | null>(null);
     const [mapReady, setMapReady] = useState(false);
+    const lotPolygonGeoJson = useMemo(
+      () => buildLotPolygonGeoJson(lotFullnessById),
+      [lotFullnessById]
+    );
 
     useImperativeHandle(ref, () => ({
       reset: () => {
@@ -91,14 +147,87 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
         mapRef.current.setMaxBounds([bounds.sw, bounds.ne]);
       }
       mapRef.current.resize();
-      setMapReady(true);
+      mapRef.current.on('load', () => {
+        if (!mapRef.current) return;
+        ensureGeoJsonLayer(mapRef.current);
+        setMapReady(true);
+      });
 
       return () => {
+        lotPopupRef.current?.remove();
+        lotPopupRef.current = null;
         mapRef.current?.remove();
         mapRef.current = null;
         setMapReady(false);
       };
-    }, [centerCoordinate, zoomLevel]);
+    }, [centerCoordinate, zoomLevel, interactive, bounds]);
+
+    useEffect(() => {
+      if (!mapReady || !mapRef.current) return;
+      const source = mapRef.current.getSource(
+        GEOJSON_SOURCE_ID
+      ) as mapboxgl.GeoJSONSource | undefined;
+      source?.setData(lotPolygonGeoJson as GeoJSON.FeatureCollection);
+    }, [mapReady, lotPolygonGeoJson]);
+
+    useEffect(() => {
+      if (!mapReady || !mapRef.current) return;
+      const map = mapRef.current;
+      if (!lotPopupRef.current) {
+        lotPopupRef.current = new mapboxgl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          maxWidth: '220px',
+        });
+      }
+      const onLotClick = (event: mapboxgl.MapLayerMouseEvent) => {
+        const feature = event.features?.[0];
+        const rawLotId = feature?.properties?.lot_id;
+        const lotId = typeof rawLotId === 'number' ? rawLotId : Number(rawLotId);
+        if (Number.isFinite(lotId) && lotId >= 0) {
+          onMarkerPress?.(lotId);
+        }
+      };
+      const onLotMouseMove = (event: mapboxgl.MapLayerMouseEvent) => {
+        const feature = event.features?.[0];
+        const lotName = String(feature?.properties?.lot_name ?? 'Lot');
+        const percentLabel = String(feature?.properties?.percent_label ?? 'No data');
+        const coordinates = event.lngLat;
+        lotPopupRef.current
+          ?.setLngLat([coordinates.lng, coordinates.lat])
+          .setHTML(
+            `<div style="font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 12px; line-height: 1.35;"><strong>${lotName}</strong><br/>${percentLabel}</div>`
+          )
+          .addTo(map);
+      };
+      const hidePopup = () => {
+        lotPopupRef.current?.remove();
+      };
+      const onLotMouseLeave = () => {
+        clearPointerCursor();
+        hidePopup();
+      };
+      const setPointerCursor = () => {
+        if (interactive) map.getCanvas().style.cursor = 'pointer';
+      };
+      const clearPointerCursor = () => {
+        map.getCanvas().style.cursor = '';
+      };
+
+      map.on('click', GEOJSON_FILL_LAYER_ID, onLotClick);
+      map.on('mousemove', GEOJSON_FILL_LAYER_ID, onLotMouseMove);
+      map.on('mouseenter', GEOJSON_FILL_LAYER_ID, setPointerCursor);
+      map.on('mouseleave', GEOJSON_FILL_LAYER_ID, onLotMouseLeave);
+
+      return () => {
+        map.off('click', GEOJSON_FILL_LAYER_ID, onLotClick);
+        map.off('mousemove', GEOJSON_FILL_LAYER_ID, onLotMouseMove);
+        map.off('mouseenter', GEOJSON_FILL_LAYER_ID, setPointerCursor);
+        map.off('mouseleave', GEOJSON_FILL_LAYER_ID, onLotMouseLeave);
+        hidePopup();
+        clearPointerCursor();
+      };
+    }, [mapReady, onMarkerPress, interactive]);
 
     useEffect(() => {
       if (!mapReady || !mapRef.current) return;

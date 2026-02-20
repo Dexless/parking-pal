@@ -5,6 +5,7 @@ import lot_helper as lh
 import lot_database as ldb
 from datetime import datetime
 import detection_database as ddb
+import main
 
 
 
@@ -14,7 +15,7 @@ def test_fetch_all_lots_returns_list():
     assert isinstance(lots, list), "fetch_all_lots() should return a list"
 
 
-def test_fetch_lot_by_id_for_all_known_lots():
+def test_fetch_lot_by_id():
     lots_dict = lh.lot_dict()
     assert isinstance(lots_dict, dict), "lh.lot_dict() should return a dict"
 
@@ -57,3 +58,37 @@ def test_insert_and_fetch_vehicle_entries():
     # Best-effort membership checks (depends on how Vehicle is represented)
     # If vehicles are returned as dicts/tuples/objects, adjust these assertions accordingly.
     assert len(vehicles) >= 2, "Expected at least 2 vehicle entries after insertion"
+
+
+# Helper function
+def get_lot(lot_id):
+    lot = ldb.fetch_lot_by_id(lot_id)
+    if not lot:
+        return lh.LotSummary(
+            lot_id=lot_id,
+            lot_name='N/A',
+            total_capacity=0,
+            current=0,
+            percent_full=0,
+            state="N/A",
+            type="N/A",
+            hours="N/A"
+        )
+    return main.to_summary(lot)
+
+# Load dict call helper function and assert with pytest
+def assert_lot_by_id(lot_id):
+    lots_dict = lh.lot_dict()
+    assert isinstance(lots_dict, dict), "lh.lot_dict() should return a dict"
+
+    lot = get_lot(lot_id)
+    assert lot.lot_id == lot_id, f"Response lot_id mismatch for lot {lot_id}"
+    assert lot.lot_name == lots_dict[lot_id], f"Response lot_name mismatch for lot {lot_id}"
+
+
+def test_buttons():
+    lots_dict = lh.lot_dict()
+    assert isinstance(lots_dict, dict), "lh.lot_dict() should return a dict"
+
+    for lot_id in lots_dict:
+        assert_get_lot_by_id(lot_id)

@@ -174,14 +174,11 @@ async def get_lot(lot_id: int):
         )
     return to_summary(lot)
 
-# Get all lot's crowd state
-@app.get("/lots_percent_full", response_model=List[str])
+# Get all lot fullness values
+# This function was created because calling all lots and parsing just their % full didn't work and individual calls were too slow.
+@app.get("/lots_percent_full", response_model=List[lh.LotPercentFull])
 async def get_lots_percent_full():
-    parking_lots = ldb.fetch_all_lots()
-    lots_percent_full = []
-    for lot in parking_lots:
-        lots_percent_full.append(full_type(int((lot.current / lot.total_capacity) * 100)))
-    return lots_percent_full
+    return ldb.fetch_lot_percent_full()
 
 # Endpoint to randomize lot data for all or specific lot
 @app.post("/randomize_all_lot_events/{lot_num}/{all_lots}", status_code=status.HTTP_204_NO_CONTENT)

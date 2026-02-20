@@ -1,22 +1,21 @@
 // src/app/screens/MapScreen.tsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 import { LOTS } from '../data/campusLots';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
-import MapboxView, { MapboxMarker, MapboxViewHandle } from '../MapboxView';
-import { fetchLotData, Lot as LotData } from '../../api/api';
+import MapboxView, { MapboxViewHandle } from '../MapboxView';
 import { useAuth } from '../AuthContext';
+import { fetchLotFullnessPercentages } from '../../api/api';
 
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
 const CAMPUS_BOUNDS = {
-  sw: [-119.754931, 36.806739] as [number, number],
+  sw: [-119.754337, 36.808416] as [number, number],
   ne: [-119.741531, 36.817459] as [number, number],
 };
-const P20_ID = 10;
 
 // Main MapScreen component
 export default function MapScreen() {
@@ -24,7 +23,7 @@ export default function MapScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { loggedIn } = useAuth();
   const mapRef = useRef<MapboxViewHandle>(null);
-  const [p20Data, setP20Data] = useState<LotData | null>(null);
+  const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
 
   const { width, height } = useWindowDimensions();
   const MAP_ASPECT = 1692 / 1306;
@@ -48,9 +47,26 @@ export default function MapScreen() {
   frameHeight *= scale;
 
   useEffect(() => {
-    fetchLotData(P20_ID)
-      .then(setP20Data)
-      .catch(() => setP20Data(null));
+    let active = true;
+    fetchLotFullnessPercentages()
+      .then((byId) => {
+        if (!active) return;
+        const next: Record<string, number> = {};
+        LOTS.forEach((lot) => {
+          const percent = byId[String(lot.id)];
+          if (typeof percent !== 'number' || !Number.isFinite(percent)) return;
+          next[String(lot.id)] = percent;
+          next[lot.name] = percent;
+        });
+        setLotFullnessById(next);
+      })
+      .catch(() => {
+        if (active) setLotFullnessById({});
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -67,35 +83,6 @@ export default function MapScreen() {
     });
   }, [loggedIn, navigation]);
 
-  const p20Fullness = useMemo(() => {
-    if (!p20Data) return 'Loading…';
-    if (typeof p20Data.percent_full === 'number') {
-      const clamped = Math.min(100, Math.max(0, p20Data.percent_full));
-      return `${clamped.toFixed(1)}% full`;
-    }
-    if (
-      typeof p20Data.total_capacity === 'number' &&
-      typeof p20Data.current === 'number' &&
-      p20Data.total_capacity > 0
-    ) {
-      const percent = (p20Data.current / p20Data.total_capacity) * 100;
-      const clamped = Math.min(100, Math.max(0, percent));
-      return `${clamped.toFixed(1)}% full`;
-    }
-    return 'No data';
-  }, [p20Data]);
-
-  const markers = useMemo<MapboxMarker[]>(
-    () =>
-      LOTS.filter((lot) => lot.id === P20_ID && lot.lngLat).map((lot) => ({
-        id: lot.id,
-        name: lot.name,
-        coordinate: lot.lngLat!,
-        detail: p20Fullness,
-      })),
-    [p20Fullness]
-  );
-
   return (
     <View style={styles.root}>
       <View style={styles.contentRow}>
@@ -111,7 +98,7 @@ export default function MapScreen() {
                 zoomLevel={CAMPUS_ZOOM}
                 interactive
                 bounds={CAMPUS_BOUNDS}
-                markers={markers}
+                lotFullnessById={lotFullnessById}
                 onMarkerPress={(id) =>
                   navigation.navigate('LotDetails', { lotId: id })
                 }

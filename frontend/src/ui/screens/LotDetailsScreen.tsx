@@ -3,6 +3,7 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { HeaderBackButton } from '@react-navigation/elements';
 import type { RootStackParamList } from '../RootNavigator';
 import { LOTS } from '../data/campusLots';
 import { fetchLotData, Lot as LotData, randomizeData } from '../../api/api';
@@ -75,6 +76,12 @@ export default function LotDetailsScreen() {
 
   useEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <HeaderBackButton
+          tintColor={COLORS.textPrimary}
+          onPress={() => navigation.navigate('Map')}
+        />
+      ),
       headerRight: loggedIn
         ? undefined
         : () => (
@@ -127,7 +134,7 @@ export default function LotDetailsScreen() {
             <Text style={styles.title}>{text.notFound}</Text>
             <Pressable
               style={styles.btn}
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate('Map')}
             >
               <Text style={styles.btnText}>{text.back}</Text>
             </Pressable>
