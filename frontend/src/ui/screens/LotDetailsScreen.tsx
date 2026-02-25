@@ -20,6 +20,20 @@ type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
 const MAP_ASPECT = 1692 / 1306;
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
+const LOT_CENTER_BY_ID: Record<number, [number, number]> = {
+  0: [-119.74342508745244, 36.80923189599102], // P1
+  1: [-119.74166555831523, 36.80981600558881], // P2
+  2: [-119.74048538633294, 36.809721517573664], // P3
+  3: [-119.74165482947902, 36.811637024554656], // P5
+  4: [-119.74179430434965, 36.813277622474885], // P6
+  5: [-119.73732092009323, 36.81552835961807], // P9
+  6: [-119.73689981327732, 36.81643451204332], // P10
+  7: [-119.74051051511327, 36.816030994446606], // P11
+  8: [-119.74309839830818, 36.81570229017987], // P13
+  9: [-119.74494107591363, 36.81495288283217], // P15
+  10: [-119.75055517196566, 36.816784851359024], // P20
+  11: [-119.75311397153347, 36.810104511706214], // P27
+};
 
 const STATE_RGB: Record<string, [number, number, number]> = {
   EMPTY: [61, 133, 198],
@@ -30,7 +44,7 @@ const STATE_RGB: Record<string, [number, number, number]> = {
 };
 
 export default function LotDetailsScreen() {
-  const { loggedIn } = useAuth();
+  const { loggedIn, setLoggedIn } = useAuth();
   // translations for spanish
   const [lang] = useState<"en" | "es">(getLang());
 
@@ -61,6 +75,7 @@ export default function LotDetailsScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<DetailsRoute>();
   const { lotId } = route.params;
+  const lotCenter = LOT_CENTER_BY_ID[lotId] ?? CAMPUS_CENTER;
 
   const lot = useMemo(() => LOTS.find(l => l.id === lotId), [lotId]);
   const [lotData, setLotData] = useState<LotData | null>(null);
@@ -82,17 +97,23 @@ export default function LotDetailsScreen() {
           onPress={() => navigation.navigate('Map')}
         />
       ),
-      headerRight: loggedIn
-        ? undefined
-        : () => (
-            <View style={styles.headerLoginWrap}>
-              <Pressable onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.headerLoginText}>Login</Text>
-              </Pressable>
-            </View>
-          ),
+      headerRight: () => (
+        <View style={styles.headerLoginWrap}>
+          <Pressable
+            onPress={() => {
+              if (loggedIn) {
+                setLoggedIn(false);
+                return;
+              }
+              navigation.navigate('Login');
+            }}
+          >
+            <Text style={styles.headerLoginText}>{loggedIn ? 'Logout' : 'Login'}</Text>
+          </Pressable>
+        </View>
+      ),
     });
-  }, [loggedIn, navigation]);
+  }, [loggedIn, navigation, setLoggedIn]);
 
   // Math
   const total = lotData?.total_capacity ?? null;
@@ -222,7 +243,7 @@ export default function LotDetailsScreen() {
               <View style={styles.mapInner}>
                 <MapboxView
                   style={StyleSheet.absoluteFillObject}
-                  centerCoordinate={CAMPUS_CENTER}
+                  centerCoordinate={lotCenter}
                   zoomLevel={CAMPUS_ZOOM}
                   pointerEvents="none"
                 />

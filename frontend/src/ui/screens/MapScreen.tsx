@@ -21,7 +21,7 @@ const CAMPUS_BOUNDS = {
 export default function MapScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { loggedIn } = useAuth();
+  const { loggedIn, setLoggedIn } = useAuth();
   const mapRef = useRef<MapboxViewHandle>(null);
   const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
 
@@ -71,17 +71,23 @@ export default function MapScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: loggedIn
-        ? undefined
-        : () => (
-            <View style={styles.headerLoginWrap}>
-              <Pressable onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.headerLoginText}>Login</Text>
-              </Pressable>
-            </View>
-          ),
+      headerRight: () => (
+        <View style={styles.headerLoginWrap}>
+          <Pressable
+            onPress={() => {
+              if (loggedIn) {
+                setLoggedIn(false);
+                return;
+              }
+              navigation.navigate('Login');
+            }}
+          >
+            <Text style={styles.headerLoginText}>{loggedIn ? 'Logout' : 'Login'}</Text>
+          </Pressable>
+        </View>
+      ),
     });
-  }, [loggedIn, navigation]);
+  }, [loggedIn, navigation, setLoggedIn]);
 
   return (
     <View style={styles.root}>

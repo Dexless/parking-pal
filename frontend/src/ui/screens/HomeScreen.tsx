@@ -15,7 +15,7 @@ const VIDEO_WIDTH = 1280;
 const VIDEO_HEIGHT = 720;
 
 export default function HomeScreen({ navigation }: Props) {
-    const { loggedIn } = useAuth();
+    const { loggedIn, setLoggedIn } = useAuth();
     // translations for spanish
     const [lang, setLang] = useState<"en" | "es">(getLang());
     const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -32,6 +32,7 @@ export default function HomeScreen({ navigation }: Props) {
       subtitle: lang === "en" ? "Find campus parking fast." : "Encuentra estacionamiento rápidamente.",
       openMap: lang === "en" ? "Open Map" : "Abrir Mapa",
       login: lang === "en" ? "Login" : "Iniciar sesion",
+      logout: lang === "en" ? "Logout" : "Cerrar sesion",
     };
 
     useEffect(() => {
@@ -78,11 +79,18 @@ export default function HomeScreen({ navigation }: Props) {
       <View style={styles.overlay} pointerEvents="none" />
 
       <View style={styles.topBar}>
-        {!loggedIn ? (
-          <Pressable style={styles.loginBtn} onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.loginBtnText}>{text.login}</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          style={styles.loginBtn}
+          onPress={() => {
+            if (loggedIn) {
+              setLoggedIn(false);
+              return;
+            }
+            navigation.navigate('Login');
+          }}
+        >
+          <Text style={styles.loginBtnText}>{loggedIn ? text.logout : text.login}</Text>
+        </Pressable>
 
         <View style={styles.langMenu}>
           <Pressable
@@ -228,3 +236,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
