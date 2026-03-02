@@ -23,7 +23,7 @@ window.resizable(False, False)
 
 #Title
 
-label_title = tk.Label(window, text="Login", font(Arial, 18))
+label_title = tk.Label(window, text="Login" )
 label_title.pack(pady=10)
 
 #Username
@@ -33,3 +33,5 @@ entry_username = tk.Entry(window)
 entry_username.pack(pady=5)
 
 #password
+entry_password = tk.Entry(window)
+entry_password.pack(pady=5)
