@@ -3,10 +3,14 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { HeaderBackButton } from '@react-navigation/elements';
 import type { RootStackParamList } from '../RootNavigator';
 import { LOTS } from '../data/campusLots';
-import { fetchLotData, Lot as LotData, randomizeData } from '../../api/api';
+import {
+  fetchLotData,
+  fetchLotFullnessPercentages,
+  Lot as LotData,
+  randomizeData,
+} from '../../api/api';
 import { COLORS } from './colors';
 import MapboxView from '../MapboxView';
 import { getLang } from "../../langSave";
@@ -20,6 +24,12 @@ type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
 const MAP_ASPECT = 1692 / 1306;
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
+const LOT_ZOOM_BY_ID: Record<number, number> = {
+  5: 16.35,
+  6: 16.35,
+  7: 16.24,
+  8: 16.31,
+};
 const LOT_CENTER_BY_ID: Record<number, [number, number]> = {
   0: [-119.74342508745244, 36.80923189599102], // P1
   1: [-119.74166555831523, 36.80981600558881], // P2
@@ -79,6 +89,8 @@ export default function LotDetailsScreen() {
 
   const lot = useMemo(() => LOTS.find(l => l.id === lotId), [lotId]);
   const [lotData, setLotData] = useState<LotData | null>(null);
+  const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
+  const lotZoom = LOT_ZOOM_BY_ID[lotId] ?? CAMPUS_ZOOM;
 
   //Fetch lot data from API, if it fails, call randomize endpoint
   useEffect(() => {
@@ -90,13 +102,29 @@ export default function LotDetailsScreen() {
   }, [lotId]);
 
   useEffect(() => {
+    let active = true;
+    fetchLotFullnessPercentages()
+      .then((byId) => {
+        if (!active) return;
+        const next: Record<string, number> = {};
+        LOTS.forEach((lotEntry) => {
+          const percent = byId[String(lotEntry.id)];
+          if (typeof percent !== 'number' || !Number.isFinite(percent)) return;
+          next[String(lotEntry.id)] = percent;
+          next[lotEntry.name] = percent;
+        });
+        setLotFullnessById(next);
+      })
+      .catch(() => {
+        if (active) setLotFullnessById({});
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <HeaderBackButton
-          tintColor={COLORS.textPrimary}
-          onPress={() => navigation.navigate('Map')}
-        />
-      ),
       headerRight: () => (
         <View style={styles.headerLoginWrap}>
           <Pressable
@@ -244,8 +272,9 @@ export default function LotDetailsScreen() {
                 <MapboxView
                   style={StyleSheet.absoluteFillObject}
                   centerCoordinate={lotCenter}
-                  zoomLevel={CAMPUS_ZOOM}
+                  zoomLevel={lotZoom}
                   pointerEvents="none"
+                  lotFullnessById={lotFullnessById}
                 />
               </View>
             </View>
