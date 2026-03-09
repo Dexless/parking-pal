@@ -16,6 +16,7 @@ import {
 
 export type MapboxViewHandle = {
   reset: () => void;
+  getCenter: () => Promise<[number, number] | null>;
 };
 
 export type MapboxMarker = {
@@ -128,6 +129,16 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           pitch: 0,
           duration: 300,
         });
+      },
+      getCenter: async () => {
+        if (!mapRef.current) {
+          return null;
+        }
+        const center = mapRef.current.getCenter();
+        if (!Number.isFinite(center.lng) || !Number.isFinite(center.lat)) {
+          return null;
+        }
+        return [center.lng, center.lat];
       },
     }));
 

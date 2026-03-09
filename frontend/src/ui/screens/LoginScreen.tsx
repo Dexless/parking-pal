@@ -17,7 +17,7 @@ import { useAuth } from '../AuthContext';
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const { setLoggedIn } = useAuth();
+  const { setLoggedIn, setUserId } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +35,7 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       const result = await login(email.trim(), password);
       setLoggedIn(true);
+      setUserId(result.user.id);
       setSuccess(`Logged in as ${result.user.email ?? 'user'}.`);
       setTimeout(() => navigation.goBack(), 600);
     } catch (err) {

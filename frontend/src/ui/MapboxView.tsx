@@ -5,6 +5,7 @@ import { buildLotPolygonGeoJson } from './mapLotGeoJson';
 
 export type MapboxViewHandle = {
   reset: () => void;
+  getCenter: () => Promise<[number, number] | null>;
 };
 
 export type MapboxMarker = {
@@ -38,16 +39,41 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
       pointerEvents = 'auto',
       interactive = false,
       bounds,
+      markers,
       onMarkerPress,
       lotFullnessById,
     },
     ref
   ) => {
     const cameraRef = useRef<Mapbox.Camera>(null);
+    const mapViewRef = useRef<Mapbox.MapView>(null);
     const lotPolygonGeoJson = useMemo(
       () => buildLotPolygonGeoJson(lotFullnessById),
       [lotFullnessById]
     );
+    const markerGeoJson = useMemo<GeoJSON.FeatureCollection>(() => {
+      const features: GeoJSON.Feature[] = (markers ?? [])
+        .filter(
+          (marker) =>
+            Number.isFinite(marker.coordinate[0]) &&
+            Number.isFinite(marker.coordinate[1])
+        )
+        .map((marker) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: marker.coordinate,
+          },
+          properties: {
+            id: marker.id,
+            name: marker.name,
+          },
+        }));
+      return {
+        type: 'FeatureCollection',
+        features,
+      };
+    }, [markers]);
 
     useImperativeHandle(ref, () => ({
       reset: () => {
@@ -58,10 +84,22 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           heading: 0,
         });
       },
+      getCenter: async () => {
+        const center = await mapViewRef.current?.getCenter();
+        if (!center || center.length < 2) {
+          return null;
+        }
+        const [lng, lat] = center;
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+          return null;
+        }
+        return [lng, lat];
+      },
     }));
 
     return (
       <Mapbox.MapView
+        ref={mapViewRef}
         style={style}
         styleURL={Mapbox.StyleURL.Dark}
         logoEnabled={false}
@@ -118,6 +156,34 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
             }}
           />
         </Mapbox.ShapeSource>
+        {markerGeoJson.features.length > 0 ? (
+          <Mapbox.ShapeSource
+            id="parking-pal-marker-source"
+            shape={markerGeoJson}
+            onPress={(event) => {
+              const feature = event.features?.[0] as { properties?: { id?: number | string } } | undefined;
+              const rawMarkerId = feature?.properties?.id;
+              const markerId =
+                typeof rawMarkerId === 'number'
+                  ? rawMarkerId
+                  : Number(rawMarkerId);
+              if (Number.isFinite(markerId)) {
+                onMarkerPress?.(markerId);
+              }
+            }}
+          >
+            <Mapbox.CircleLayer
+              id="parking-pal-marker-circle"
+              style={{
+                circleRadius: 6,
+                circleColor: '#ef4444',
+                circleOpacity: 0.95,
+                circleStrokeWidth: 2,
+                circleStrokeColor: '#f3f4f6',
+              }}
+            />
+          </Mapbox.ShapeSource>
+        ) : null}
       </Mapbox.MapView>
     );
   }

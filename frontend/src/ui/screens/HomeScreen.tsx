@@ -15,7 +15,7 @@ const VIDEO_WIDTH = 1280;
 const VIDEO_HEIGHT = 720;
 
 export default function HomeScreen({ navigation }: Props) {
-    const { loggedIn, setLoggedIn } = useAuth();
+    const { loggedIn, setLoggedIn, setUserId } = useAuth();
     // translations for spanish
     const [lang, setLang] = useState<"en" | "es">(getLang());
     const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -84,6 +84,7 @@ export default function HomeScreen({ navigation }: Props) {
           onPress={() => {
             if (loggedIn) {
               setLoggedIn(false);
+              setUserId(null);
               return;
             }
             navigation.navigate('Login');

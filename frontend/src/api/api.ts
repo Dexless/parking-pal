@@ -55,6 +55,32 @@ export class HttpClient {
 
     return (await res.json()) as T;
   }
+
+  async delete<T>(path: string): Promise<T> {
+    const url = new URL(path, this.baseUrl);
+
+    const res = await fetch(url.toString(), {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `DELETE ${url.pathname} failed: ${res.status} ${res.statusText} ${text}`
+      );
+    }
+
+    if (res.status === 204) {
+      return null as T;
+    }
+
+    const text = await res.text();
+    if (!text) {
+      return null as T;
+    }
+
+    return JSON.parse(text) as T;
+  }
 }
 
 export const apiClient = new HttpClient({
@@ -109,6 +135,39 @@ export async function randomize_all_lot_events(
   return apiClient.post<null>(
     `/randomize_all_lot_events/${lot_id}/${all_lots}`
   );
+}
+
+export interface VehiclePin {
+  uuid: string;
+  lat: number;
+  lon: number;
+}
+
+export async function fetchVehiclePin(userUuid: string) {
+  try {
+    return await apiClient.get<VehiclePin>(`/vehicle-pin/${userUuid}`);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("GET /vehicle-pin/") &&
+      error.message.includes("404")
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function upsertVehiclePin(userUuid: string, lat: number, lon: number) {
+  return apiClient.post<VehiclePin>("/vehicle-pin", {
+    uuid: userUuid,
+    lat,
+    lon,
+  });
+}
+
+export async function deleteVehiclePin(userUuid: string) {
+  return apiClient.delete<null>(`/vehicle-pin/${userUuid}`);
 }
 
 export interface LoginResponse {

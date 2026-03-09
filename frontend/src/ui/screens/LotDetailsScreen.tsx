@@ -54,7 +54,7 @@ const STATE_RGB: Record<string, [number, number, number]> = {
 };
 
 export default function LotDetailsScreen() {
-  const { loggedIn, setLoggedIn } = useAuth();
+  const { loggedIn, setLoggedIn, setUserId } = useAuth();
   // translations for spanish
   const [lang] = useState<"en" | "es">(getLang());
 
@@ -131,6 +131,7 @@ export default function LotDetailsScreen() {
             onPress={() => {
               if (loggedIn) {
                 setLoggedIn(false);
+                setUserId(null);
                 return;
               }
               navigation.navigate('Login');
@@ -141,7 +142,7 @@ export default function LotDetailsScreen() {
         </View>
       ),
     });
-  }, [loggedIn, navigation, setLoggedIn]);
+  }, [loggedIn, navigation, setLoggedIn, setUserId]);
 
   // Math
   const total = lotData?.total_capacity ?? null;

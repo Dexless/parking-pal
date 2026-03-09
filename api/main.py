@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
+from uuid import UUID
 import os
 import httpx
 import lot_helper as lh
@@ -186,12 +187,22 @@ async def randomize_all_lot_events(lot_num: int, all_lots: bool):
     ldb.randomize_lot_data(lot_num, all_lots)
 
 
-# Endpoint to post pins to the database
-@app.post("/pins", response_model=pdb.pin)
-async def create_pin(lot_id: int, loc_x: float, loc_y: float):
-    pin = pdb.create_pin_object(lot_id=lot_id, loc_x=loc_x, loc_y=loc_y)
-    pdb.insert_pin(pin)
+@app.post("/vehicle-pin", response_model=pdb.VehiclePin)
+async def upsert_vehicle_pin(pin: pdb.VehiclePin):
+    return pdb.upsert_vehicle_pin(pin)
+
+
+@app.get("/vehicle-pin/{user_uuid}", response_model=pdb.VehiclePin)
+async def get_vehicle_pin(user_uuid: UUID):
+    pin = pdb.fetch_vehicle_pin(user_uuid)
+    if pin is None:
+        raise HTTPException(status_code=404, detail="Vehicle pin not found")
     return pin
+
+
+@app.delete("/vehicle-pin/{user_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_vehicle_pin(user_uuid: UUID):
+    pdb.delete_vehicle_pin(user_uuid)
 
 # Endpoint to randomize lot data by ID in case lot is not populated
 @app.post("/randomize_lot/{lot_id}", response_model=lh.LotSummary)
@@ -207,9 +218,3 @@ async def randomize_lot(lot_id: int):
     updated_lot = ldb.fetch_lot_by_id(lot_id)
     return to_summary(updated_lot)
 
-# Endpoint to post pins to the database (v1.1)
-@app.post("/pins", response_model=pdb.pin)
-async def create_pin(lot_id: int, loc_x: float, loc_y: float):
-    pin = pdb.create_pin_object(lot_id=lot_id, loc_x=loc_x, loc_y=loc_y)
-    pdb.insert_pin(pin)
-    return pin
