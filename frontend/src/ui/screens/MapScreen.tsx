@@ -31,6 +31,7 @@ export default function MapScreen() {
   const [vehiclePin, setVehiclePin] = useState<VehiclePin | null>(null);
   const [pinBusy, setPinBusy] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [isAimingPin, setIsAimingPin] = useState(false);
 
   const vehicleMarkers = useMemo<MapboxMarker[]>(() => {
     if (!vehiclePin) {
@@ -112,6 +113,7 @@ export default function MapScreen() {
     if (!loggedIn || !userId) {
       setVehiclePin(null);
       setPinError(null);
+      setIsAimingPin(false);
       return;
     }
 
@@ -138,9 +140,20 @@ export default function MapScreen() {
 
   const setPinLabel = !loggedIn
     ? 'Login to Set Vehicle Pin'
-    : vehiclePin
-      ? 'Update Vehicle Pin'
-      : 'Set Vehicle Pin';
+    : isAimingPin
+      ? 'Save Vehicle Pin Here'
+      : vehiclePin
+        ? 'Aim + Update Vehicle Pin'
+        : 'Aim + Set Vehicle Pin';
+
+  function onAimVehiclePin() {
+    if (!loggedIn || !userId) {
+      navigation.navigate('Login');
+      return;
+    }
+    setPinError(null);
+    setIsAimingPin(true);
+  }
 
   async function onSetVehiclePin() {
     if (!loggedIn || !userId) {
@@ -161,6 +174,7 @@ export default function MapScreen() {
     try {
       const pin = await upsertVehiclePin(userId, lat, lon);
       setVehiclePin(pin);
+      setIsAimingPin(false);
     } catch (error) {
       if (error instanceof Error) {
         setPinError(error.message);
@@ -210,13 +224,21 @@ export default function MapScreen() {
                 interactive
                 bounds={CAMPUS_BOUNDS}
                 lotFullnessById={lotFullnessById}
-                markers={vehicleMarkers}
+                markers={isAimingPin ? [] : vehicleMarkers}
                 onMarkerPress={(id) => {
                   if (id >= 0) {
                     navigation.navigate('LotDetails', { lotId: id });
                   }
                 }}
               />
+              {isAimingPin ? (
+                <View pointerEvents="none" style={styles.aimPinOverlay}>
+                  <View style={styles.aimPinBadge}>
+                    <View style={styles.aimPinDot} />
+                  </View>
+                  <View style={styles.aimPinStem} />
+                </View>
+              ) : null}
             </View>
           </View>
           <Pressable
@@ -228,13 +250,22 @@ export default function MapScreen() {
           </Pressable>
           <Pressable
             style={[styles.vehiclePinBtn, pinBusy && styles.buttonDisabled]}
-            onPress={onSetVehiclePin}
+            onPress={isAimingPin ? onSetVehiclePin : onAimVehiclePin}
             disabled={pinBusy}
           >
             <Text style={styles.resetBtnText}>
               {pinBusy ? 'Working...' : setPinLabel}
             </Text>
           </Pressable>
+          {isAimingPin ? (
+            <Pressable
+              style={[styles.resetBtn, pinBusy && styles.buttonDisabled]}
+              onPress={() => setIsAimingPin(false)}
+              disabled={pinBusy}
+            >
+              <Text style={styles.resetBtnText}>Cancel Pin Aim</Text>
+            </Pressable>
+          ) : null}
           {loggedIn && vehiclePin ? (
             <Pressable
               style={[styles.deletePinBtn, pinBusy && styles.buttonDisabled]}
@@ -248,6 +279,9 @@ export default function MapScreen() {
             <Text style={styles.pinMetaText}>
               Lat: {vehiclePin.lat.toFixed(5)} Lon: {vehiclePin.lon.toFixed(5)}
             </Text>
+          ) : null}
+          {isAimingPin ? (
+            <Text style={styles.pinMetaText}>Drag the map, then tap Save Vehicle Pin Here.</Text>
           ) : null}
           {pinError ? <Text style={styles.pinErrorText}>{pinError}</Text> : null}
         </View>
@@ -320,6 +354,39 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 8,
+  },
+  aimPinOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aimPinBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#fef3c7',
+    backgroundColor: '#e11d48',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  aimPinDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#fee2e2',
+  },
+  aimPinStem: {
+    marginTop: -1,
+    width: 2,
+    height: 14,
+    backgroundColor: '#fee2e2',
+    borderRadius: 1,
   },
   resetBtn: {
     marginTop: 10,
