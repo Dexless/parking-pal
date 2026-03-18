@@ -1,4 +1,4 @@
-// src/app/theme/colors.ts
+// src/ui/theme/colors.ts
 export const COLORS = {
   bg: '#292929',
   card: '#1f1f1f',

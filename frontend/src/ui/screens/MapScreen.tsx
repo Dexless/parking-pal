@@ -51,8 +51,24 @@ export default function MapScreen() {
   const MAP_ASPECT = 1692 / 1306;
   const horizontalPadding = 12 * 2;
   const verticalPadding = 12 * 2 + 60;
-  const maxWidth = width - horizontalPadding;
-  const maxHeight = height - verticalPadding;
+  const panelGap = 16;
+  const sidePanelWidth = 180;
+  const stackedLayoutBreakpoint = 1020;
+  const layoutScale = 0.8;
+  const isStackedLayout = width < stackedLayoutBreakpoint;
+  const availableWidth = width - horizontalPadding;
+  const availableHeight = height - verticalPadding;
+  const contentWidth = Math.min(
+    availableWidth,
+    Math.max(320, availableWidth * layoutScale)
+  );
+  const maxWidth = isStackedLayout
+    ? contentWidth
+    : Math.max(320, contentWidth - sidePanelWidth - panelGap);
+  const maxHeight = Math.min(
+    availableHeight,
+    Math.max(280, availableHeight * layoutScale)
+  );
 
   let frameWidth = maxWidth;
   let frameHeight = frameWidth / MAP_ASPECT;
@@ -61,10 +77,6 @@ export default function MapScreen() {
     frameHeight = maxHeight;
     frameWidth = frameHeight * MAP_ASPECT;
   }
-  const scale = 0.88;
-  frameWidth *= scale;
-  frameHeight *= scale;
-
   useEffect(() => {
     let active = true;
     fetchLotFullnessPercentages()
@@ -210,7 +222,7 @@ export default function MapScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.contentRow}>
+      <View style={[styles.contentRow, isStackedLayout && styles.contentColumn]}>
         <View style={styles.leftColumn}>
           <View style={styles.mapCard}>
             <View
@@ -285,7 +297,13 @@ export default function MapScreen() {
           ) : null}
           {pinError ? <Text style={styles.pinErrorText}>{pinError}</Text> : null}
         </View>
-        <View style={styles.rightColumn}>
+        <View
+          style={[
+            styles.rightColumn,
+            { width: isStackedLayout ? frameWidth : sidePanelWidth },
+            isStackedLayout && styles.rightColumnStacked,
+          ]}
+        >
           <View style={styles.debugPanel}>
             <Text style={styles.debugTitle}>Debug: Lots</Text>
             <View style={styles.debugRow}>
@@ -327,14 +345,20 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 16,
     width: '100%',
-    maxWidth: 1100,
     justifyContent: 'center',
+  },
+  contentColumn: {
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   leftColumn: {
     alignItems: 'center',
   },
   rightColumn: {
     alignItems: 'flex-start',
+  },
+  rightColumnStacked: {
+    alignItems: 'center',
   },
   frame: {
     alignSelf: 'center',
@@ -439,7 +463,7 @@ const styles = StyleSheet.create({
   },
   debugPanel: {
     marginTop: 0,
-    width: 180,
+    width: '100%',
   },
   debugTitle: {
     color: COLORS.textSecondary,

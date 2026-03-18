@@ -11,21 +11,23 @@ class VehiclePin(BaseModel):
     lon: float = Field(ge=-180, le=180)
 
 
+class UserProfile(BaseModel):
+    uuid: UUID
+    username: str = ""
+    notes: str = ""
+
+
 def upsert_vehicle_pin(vehicle_pin: VehiclePin) -> VehiclePin:
     connection = lh.establish_connection()
     cursor = connection.cursor()
     try:
         cursor.execute(
             """
-            DELETE FROM pins
-            WHERE pins.id = %s::uuid;
-            """,
-            (str(vehicle_pin.uuid),),
-        )
-        cursor.execute(
-            """
-            INSERT INTO pins (id, lat, lon)
-            VALUES (%s::uuid, %s, %s);
+            INSERT INTO users (id, lat, lon, username, notes)
+            VALUES (%s::uuid, %s, %s, '', '')
+            ON CONFLICT (id) DO UPDATE
+            SET lat = EXCLUDED.lat,
+                lon = EXCLUDED.lon;
             """,
             (str(vehicle_pin.uuid), vehicle_pin.lat, vehicle_pin.lon),
         )
@@ -43,8 +45,8 @@ def fetch_vehicle_pin(user_uuid: UUID) -> Optional[VehiclePin]:
         cursor.execute(
             """
             SELECT lat, lon
-            FROM pins
-            WHERE pins.id = %s::uuid
+            FROM users
+            WHERE users.id = %s::uuid
               AND lat IS NOT NULL
               AND lon IS NOT NULL
             LIMIT 1;
@@ -65,11 +67,71 @@ def delete_vehicle_pin(user_uuid: UUID) -> bool:
     cursor = connection.cursor()
     try:
         cursor.execute(
-            "DELETE FROM pins WHERE pins.id = %s::uuid;",
+            """
+            UPDATE users
+            SET lat = NULL,
+                lon = NULL
+            WHERE users.id = %s::uuid;
+            """,
             (str(user_uuid),),
         )
         connection.commit()
         return cursor.rowcount > 0
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def fetch_user_profile(user_uuid: UUID) -> UserProfile:
+    connection = lh.establish_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT COALESCE(username, ''), COALESCE(notes, '')
+            FROM users
+            WHERE users.id = %s::uuid
+            LIMIT 1;
+            """,
+            (str(user_uuid),),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return UserProfile(uuid=user_uuid, username="", notes="")
+        return UserProfile(uuid=user_uuid, username=row[0], notes=row[1])
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def upsert_user_profile(user_profile: UserProfile) -> UserProfile:
+    connection = lh.establish_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO users (id, username, notes)
+            VALUES (%s::uuid, %s, %s)
+            ON CONFLICT (id) DO UPDATE
+            SET username = EXCLUDED.username,
+                notes = EXCLUDED.notes
+            RETURNING COALESCE(username, ''), COALESCE(notes, '');
+            """,
+            (
+                str(user_profile.uuid),
+                user_profile.username.strip(),
+                user_profile.notes.strip(),
+            ),
+        )
+        row = cursor.fetchone()
+        connection.commit()
+        if row is None:
+            return UserProfile(
+                uuid=user_profile.uuid,
+                username=user_profile.username.strip(),
+                notes=user_profile.notes.strip(),
+            )
+        return UserProfile(uuid=user_profile.uuid, username=row[0], notes=row[1])
     finally:
         cursor.close()
         connection.close()

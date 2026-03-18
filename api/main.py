@@ -187,6 +187,16 @@ async def randomize_all_lot_events(lot_num: int, all_lots: bool):
     ldb.randomize_lot_data(lot_num, all_lots)
 
 
+@app.get("/profile/{user_uuid}", response_model=pdb.UserProfile)
+async def get_user_profile(user_uuid: UUID):
+    return pdb.fetch_user_profile(user_uuid)
+
+
+@app.post("/profile", response_model=pdb.UserProfile)
+async def upsert_user_profile(profile: pdb.UserProfile):
+    return pdb.upsert_user_profile(profile)
+
+
 @app.post("/vehicle-pin", response_model=pdb.VehiclePin)
 async def upsert_vehicle_pin(pin: pdb.VehiclePin):
     return pdb.upsert_vehicle_pin(pin)

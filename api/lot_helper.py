@@ -73,25 +73,10 @@ def update_lots_current(is_entering: bool, lot_id: int):
 
 
 
-class DB_Credentials:
-    DB_HOST = os.getenv("DB_HOST")
-    DB_NAME = os.getenv("DB_NAME")
-    DB_USER = os.getenv("DB_USER")
-    DB_PASS = os.getenv("DB_PASS")
-    DB_PORT = os.getenv("DB_PORT", "5432")
-    DB_SSLMODE = os.getenv("DB_SSLMODE", "require")
-
 def establish_connection():
-    db = DB_Credentials()
-    if not all([db.DB_HOST, db.DB_NAME, db.DB_USER, db.DB_PASS]):
-        raise RuntimeError("Missing DB env vars (DB_HOST/DB_NAME/DB_USER/DB_PASS). Check your .env loading.")
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("Missing DB env var (DATABASE_URL). Check your .env loading.")
 
-    connection = psycopg2.connect(
-        host=db.DB_HOST,
-        database=db.DB_NAME,
-        user=db.DB_USER,
-        password=db.DB_PASS,
-        port=db.DB_PORT,
-        sslmode=db.DB_SSLMODE,
-    )
+    connection = psycopg2.connect(database_url)
     return connection

@@ -7,8 +7,8 @@ Check versions:
 
 Create or update the root `.env` file:
 - `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN` (required for map rendering)
-- `SEXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (required for login endpoint)
-- Database variables used by the API (`DB_PASS`)
+- `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (required for login endpoint)
+- Database URL used by the API (`DATABASE_URL`)
 
 Use `.env.example` as a template.
 

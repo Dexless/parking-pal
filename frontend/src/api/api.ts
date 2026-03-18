@@ -143,6 +143,28 @@ export interface VehiclePin {
   lon: number;
 }
 
+export interface UserProfile {
+  uuid: string;
+  username: string;
+  notes: string;
+}
+
+export async function fetchUserProfile(userUuid: string) {
+  return apiClient.get<UserProfile>(`/profile/${userUuid}`);
+}
+
+export async function upsertUserProfile(
+  userUuid: string,
+  username: string,
+  notes: string
+) {
+  return apiClient.post<UserProfile>("/profile", {
+    uuid: userUuid,
+    username,
+    notes,
+  });
+}
+
 export async function fetchVehiclePin(userUuid: string) {
   try {
     return await apiClient.get<VehiclePin>(`/vehicle-pin/${userUuid}`);
