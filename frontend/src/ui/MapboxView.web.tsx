@@ -17,6 +17,7 @@ import {
 export type MapboxViewHandle = {
   reset: () => void;
   getCenter: () => Promise<[number, number] | null>;
+  getAimCoordinate: (verticalOffsetPx?: number) => Promise<[number, number] | null>;
 };
 
 export type MapboxMarker = {
@@ -139,6 +140,27 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           return null;
         }
         return [center.lng, center.lat];
+      },
+      getAimCoordinate: async (verticalOffsetPx = 0) => {
+        if (!mapRef.current) {
+          return null;
+        }
+        const canvas = mapRef.current.getCanvas();
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+          const center = mapRef.current.getCenter();
+          return [center.lng, center.lat];
+        }
+
+        const target = mapRef.current.unproject([
+          width / 2,
+          height / 2 + verticalOffsetPx,
+        ]);
+        if (!Number.isFinite(target.lng) || !Number.isFinite(target.lat)) {
+          return null;
+        }
+        return [target.lng, target.lat];
       },
     }));
 

@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
 import Mapbox from './mapbox';
 import { buildLotPolygonGeoJson } from './mapLotGeoJson';
@@ -6,6 +6,7 @@ import { buildLotPolygonGeoJson } from './mapLotGeoJson';
 export type MapboxViewHandle = {
   reset: () => void;
   getCenter: () => Promise<[number, number] | null>;
+  getAimCoordinate: (verticalOffsetPx?: number) => Promise<[number, number] | null>;
 };
 
 export type MapboxMarker = {
@@ -47,6 +48,7 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
   ) => {
     const cameraRef = useRef<Mapbox.Camera>(null);
     const mapViewRef = useRef<Mapbox.MapView>(null);
+    const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
     const lotPolygonGeoJson = useMemo(
       () => buildLotPolygonGeoJson(lotFullnessById),
       [lotFullnessById]
@@ -95,6 +97,32 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
         }
         return [lng, lat];
       },
+      getAimCoordinate: async (verticalOffsetPx = 0) => {
+        if (!mapViewRef.current) {
+          return null;
+        }
+        if (mapSize.width <= 0 || mapSize.height <= 0) {
+          return await mapViewRef.current.getCenter();
+        }
+
+        try {
+          const point: [number, number] = [
+            mapSize.width / 2,
+            mapSize.height / 2 + verticalOffsetPx,
+          ];
+          const coordinate = await mapViewRef.current.getCoordinateFromView(point);
+          if (!coordinate || coordinate.length < 2) {
+            return null;
+          }
+          const [lng, lat] = coordinate;
+          if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+            return null;
+          }
+          return [lng, lat];
+        } catch {
+          return await mapViewRef.current.getCenter();
+        }
+      },
     }));
 
     return (
@@ -111,6 +139,10 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
         pitchEnabled={interactive}
         rotateEnabled={interactive}
         pointerEvents={pointerEvents}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setMapSize({ width, height });
+        }}
       >
         <Mapbox.Camera
           ref={cameraRef}

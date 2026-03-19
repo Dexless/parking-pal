@@ -17,6 +17,7 @@ import {
 
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
+const PIN_AIM_VERTICAL_OFFSET_PX = -10;
 const CAMPUS_BOUNDS = {
   sw: [-119.754337, 36.808416] as [number, number],
   ne: [-119.741531, 36.817459] as [number, number],
@@ -173,7 +174,9 @@ export default function MapScreen() {
       return;
     }
 
-    const center = await mapRef.current?.getCenter();
+    const center =
+      (await mapRef.current?.getAimCoordinate(PIN_AIM_VERTICAL_OFFSET_PX)) ??
+      (await mapRef.current?.getCenter());
     if (!center) {
       setPinError('Unable to read map center.');
       return;
@@ -383,6 +386,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+    transform: [{ translateY: PIN_AIM_VERTICAL_OFFSET_PX }],
   },
   aimPinBadge: {
     width: 28,
