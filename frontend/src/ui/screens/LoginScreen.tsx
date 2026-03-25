@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -23,6 +23,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const canSubmit = useMemo(() => {
     return email.trim().length > 0 && password.length > 0 && !isLoading;
@@ -63,6 +64,19 @@ export default function LoginScreen({ navigation }: Props) {
     }
   }
 
+  function submitAuth(action: 'login' | 'register') {
+    if (!canSubmit) {
+      return;
+    }
+
+    if (action === 'login') {
+      void onLogin();
+      return;
+    }
+
+    void onRegister();
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.card}>
@@ -73,20 +87,25 @@ export default function LoginScreen({ navigation }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
+          returnKeyType="next"
           placeholder="Email"
           placeholderTextColor={COLORS.textSecondary}
           value={email}
           onChangeText={setEmail}
+          onSubmitEditing={() => passwordInputRef.current?.focus()}
           style={styles.input}
         />
         <TextInput
+          ref={passwordInputRef}
           autoCapitalize="none"
           autoCorrect={false}
           secureTextEntry
+          returnKeyType="go"
           placeholder="Password"
           placeholderTextColor={COLORS.textSecondary}
           value={password}
           onChangeText={setPassword}
+          onSubmitEditing={() => submitAuth('login')}
           style={styles.input}
         />
 
@@ -96,7 +115,7 @@ export default function LoginScreen({ navigation }: Props) {
         <View style={styles.buttonRow}>
           <Pressable
             style={[styles.loginBtn, !canSubmit && styles.loginBtnDisabled]}
-            onPress={onLogin}
+            onPress={() => submitAuth('login')}
             disabled={!canSubmit}
           >
             {isLoading ? (
@@ -108,7 +127,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <Pressable
             style={[styles.registerBtn, !canSubmit && styles.loginBtnDisabled]}
-            onPress={onRegister}
+            onPress={() => submitAuth('register')}
             disabled={!canSubmit}
           >
             <Text style={styles.loginBtnText}>Register</Text>

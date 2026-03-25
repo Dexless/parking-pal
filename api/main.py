@@ -10,7 +10,7 @@ import httpx
 import lot_helper as lh
 import lot_database as ldb
 import detection_database as ddb
-import pin_database as pdb
+import users_database as udb
 
 app = FastAPI(title="ParkingPal API")
 
@@ -187,24 +187,24 @@ async def randomize_all_lot_events(lot_num: int, all_lots: bool):
     ldb.randomize_lot_data(lot_num, all_lots)
 
 
-@app.get("/profile/{user_uuid}", response_model=pdb.UserProfile)
+@app.get("/profile/{user_uuid}", response_model=udb.UserProfile)
 async def get_user_profile(user_uuid: UUID):
-    return pdb.fetch_user_profile(user_uuid)
+    return udb.fetch_user_profile(user_uuid)
 
 
-@app.post("/profile", response_model=pdb.UserProfile)
-async def upsert_user_profile(profile: pdb.UserProfile):
-    return pdb.upsert_user_profile(profile)
+@app.post("/profile", response_model=udb.UserProfile)
+async def upsert_user_profile(profile: udb.UserProfile):
+    return udb.upsert_user_profile(profile)
 
 
-@app.post("/vehicle-pin", response_model=pdb.VehiclePin)
-async def upsert_vehicle_pin(pin: pdb.VehiclePin):
-    return pdb.upsert_vehicle_pin(pin)
+@app.post("/vehicle-pin", response_model=udb.VehiclePin)
+async def upsert_vehicle_pin(pin: udb.VehiclePin):
+    return udb.upsert_vehicle_pin(pin)
 
 
-@app.get("/vehicle-pin/{user_uuid}", response_model=pdb.VehiclePin)
+@app.get("/vehicle-pin/{user_uuid}", response_model=udb.VehiclePin)
 async def get_vehicle_pin(user_uuid: UUID):
-    pin = pdb.fetch_vehicle_pin(user_uuid)
+    pin = udb.fetch_vehicle_pin(user_uuid)
     if pin is None:
         raise HTTPException(status_code=404, detail="Vehicle pin not found")
     return pin
@@ -212,7 +212,7 @@ async def get_vehicle_pin(user_uuid: UUID):
 
 @app.delete("/vehicle-pin/{user_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_vehicle_pin(user_uuid: UUID):
-    pdb.delete_vehicle_pin(user_uuid)
+    udb.delete_vehicle_pin(user_uuid)
 
 # Endpoint to randomize lot data by ID in case lot is not populated
 @app.post("/randomize_lot/{lot_id}", response_model=lh.LotSummary)
