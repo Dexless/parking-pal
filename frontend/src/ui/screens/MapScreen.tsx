@@ -26,7 +26,7 @@ const CAMPUS_BOUNDS = {
 export default function MapScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { loggedIn, setLoggedIn, userId, setUserId } = useAuth();
+  const { loggedIn, userId } = useAuth();
   const mapRef = useRef<MapboxViewHandle>(null);
   const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
   const [vehiclePin, setVehiclePin] = useState<VehiclePin | null>(null);
@@ -100,27 +100,6 @@ export default function MapScreen() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerLoginWrap}>
-          <Pressable
-            onPress={() => {
-              if (loggedIn) {
-                setLoggedIn(false);
-                setUserId(null);
-                return;
-              }
-              navigation.navigate('Login');
-            }}
-          >
-            <Text style={styles.headerLoginText}>{loggedIn ? 'Logout' : 'Login'}</Text>
-          </Pressable>
-        </View>
-      ),
-    });
-  }, [loggedIn, navigation, setLoggedIn, setUserId]);
 
   useEffect(() => {
     if (!loggedIn || !userId) {
@@ -334,14 +313,6 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerLoginText: {
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-    paddingHorizontal: 8,
-  },
-  headerLoginWrap: {
-    marginRight: 12,
   },
   contentRow: {
     flexDirection: 'row',

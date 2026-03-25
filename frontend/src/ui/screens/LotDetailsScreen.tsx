@@ -14,7 +14,6 @@ import {
 import { COLORS } from './colors';
 import MapboxView from '../MapboxView';
 import { getLang } from "../../langSave";
-import { useAuth } from '../AuthContext';
 
 
 // Define route prop type for LotDetails screen
@@ -54,7 +53,6 @@ const STATE_RGB: Record<string, [number, number, number]> = {
 };
 
 export default function LotDetailsScreen() {
-  const { loggedIn, setLoggedIn, setUserId } = useAuth();
   // translations for spanish
   const [lang] = useState<"en" | "es">(getLang());
 
@@ -122,27 +120,6 @@ export default function LotDetailsScreen() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerLoginWrap}>
-          <Pressable
-            onPress={() => {
-              if (loggedIn) {
-                setLoggedIn(false);
-                setUserId(null);
-                return;
-              }
-              navigation.navigate('Login');
-            }}
-          >
-            <Text style={styles.headerLoginText}>{loggedIn ? 'Logout' : 'Login'}</Text>
-          </Pressable>
-        </View>
-      ),
-    });
-  }, [loggedIn, navigation, setLoggedIn, setUserId]);
 
   // Math
   const total = lotData?.total_capacity ?? null;
@@ -297,14 +274,6 @@ const styles = StyleSheet.create({
   contentRow: {
     flexDirection: 'row',
     width: '85%',
-  },
-  headerLoginText: {
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-    paddingHorizontal: 8,
-  },
-  headerLoginWrap: {
-    marginRight: 12,
   },
   leftPane: { // Left pane styles definition
     flex: 1,

@@ -6,6 +6,8 @@ import MapScreen from './screens/MapScreen';
 import LotDetailsScreen from './screens/LotDetailsScreen';
 import LoginScreen from './screens/LoginScreen';
 import { COLORS } from './screens/colors';
+import ProfileTag from './ProfileTag';
+import StackBackButton from './StackBackButton';
 
 // Define the type for the root stack parameters
 export type RootStackParamList = {
@@ -21,7 +23,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   return (
     <Stack.Navigator
-      screenOptions={{
+      screenOptions={({ navigation }) => ({
         headerStyle: {
           backgroundColor: COLORS.bg,
         },
@@ -31,7 +33,8 @@ export default function RootNavigator() {
           fontWeight: '600',
         },
         headerShadowVisible: false,
-      }}
+        headerRight: () => <ProfileTag navigation={navigation} variant="header" />,
+      })}
     >
       <Stack.Screen // Home screen
         name="Home"
@@ -41,17 +44,32 @@ export default function RootNavigator() {
       <Stack.Screen // Map screen
         name="Map"
         component={MapScreen}
-        options={{ title: 'Campus Map' }}
+        options={({ navigation }) => ({
+          title: 'Campus Map',
+          headerLeft: () => (
+            <StackBackButton navigation={navigation} fallbackRoute="Home" />
+          ),
+        })}
       />
       <Stack.Screen
         name="Login"
         component={LoginScreen}
-        options={{ title: 'Login' }}
+        options={({ navigation }) => ({
+          title: 'Login',
+          headerLeft: () => (
+            <StackBackButton navigation={navigation} fallbackRoute="Home" />
+          ),
+        })}
       />
       <Stack.Screen // Lot details screen
         name="LotDetails"
         component={LotDetailsScreen}
-        options={{ title: 'Lot Details' }}
+        options={({ navigation }) => ({
+          title: 'Lot Details',
+          headerLeft: () => (
+            <StackBackButton navigation={navigation} fallbackRoute="Map" />
+          ),
+        })}
       />
     </Stack.Navigator>
   );

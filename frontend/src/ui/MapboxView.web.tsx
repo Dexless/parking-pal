@@ -115,6 +115,7 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<mapboxgl.Marker[]>([]);
     const lotPopupRef = useRef<mapboxgl.Popup | null>(null);
+    const isHoveringMarkerRef = useRef(false);
     const [mapReady, setMapReady] = useState(false);
     const lotPolygonGeoJson = useMemo(
       () => buildLotPolygonGeoJson(lotFullnessById),
@@ -221,7 +222,14 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           onMarkerPress?.(lotId);
         }
       };
+      const hidePopup = () => {
+        lotPopupRef.current?.remove();
+      };
       const onLotMouseMove = (event: mapboxgl.MapLayerMouseEvent) => {
+        if (isHoveringMarkerRef.current) {
+          hidePopup();
+          return;
+        }
         const feature = event.features?.[0];
         const lotName = String(feature?.properties?.lot_name ?? 'Lot');
         const percentLabel = String(feature?.properties?.percent_label ?? 'No data');
@@ -233,15 +241,15 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           )
           .addTo(map);
       };
-      const hidePopup = () => {
-        lotPopupRef.current?.remove();
-      };
       const onLotMouseLeave = () => {
         clearPointerCursor();
         hidePopup();
       };
       const setPointerCursor = () => {
-        if (interactive) map.getCanvas().style.cursor = 'pointer';
+        if (!interactive || isHoveringMarkerRef.current) {
+          return;
+        }
+        map.getCanvas().style.cursor = 'pointer';
       };
       const clearPointerCursor = () => {
         map.getCanvas().style.cursor = '';
@@ -266,6 +274,8 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
       if (!mapReady || !mapRef.current) return;
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
+      isHoveringMarkerRef.current = false;
+      lotPopupRef.current?.remove();
 
       if (!markers?.length) return;
 
@@ -321,10 +331,16 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
         tooltip.appendChild(detail);
 
         const showTooltip = () => {
+          isHoveringMarkerRef.current = true;
+          lotPopupRef.current?.remove();
+          if (interactive) {
+            mapRef.current?.getCanvas().style.setProperty('cursor', '');
+          }
           tooltip.style.opacity = '1';
           tooltip.style.transform = 'translateX(-50%) translateY(0)';
         };
         const hideTooltip = () => {
+          isHoveringMarkerRef.current = false;
           tooltip.style.opacity = '0';
           tooltip.style.transform = 'translateX(-50%) translateY(6px)';
         };
@@ -345,8 +361,9 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
       return () => {
         markersRef.current.forEach((marker) => marker.remove());
         markersRef.current = [];
+        isHoveringMarkerRef.current = false;
       };
-    }, [mapReady, markers, onMarkerPress]);
+    }, [mapReady, markers, onMarkerPress, interactive]);
 
     useEffect(() => {
       if (!containerRef.current || !mapRef.current) return;
