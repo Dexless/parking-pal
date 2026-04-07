@@ -16,15 +16,15 @@ import { LOTS } from './data/campusLots';
 import type { RootStackParamList } from './RootNavigator';
 import { COLORS } from './screens/colors';
 
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList>;
+type Props<RouteName extends keyof RootStackParamList = keyof RootStackParamList> = {
+  navigation: NativeStackNavigationProp<RootStackParamList, RouteName>;
   variant?: 'overlay' | 'header';
 };
 
-export default function ProfileTag({
+export default function ProfileTag<RouteName extends keyof RootStackParamList>({
   navigation,
   variant = 'overlay',
-}: Props) {
+}: Props<RouteName>) {
   const { loggedIn, setLoggedIn, userId, setUserId } = useAuth();
   const [profileBadgeOpen, setProfileBadgeOpen] = useState(false);
   const [lotDropdownOpen, setLotDropdownOpen] = useState(false);

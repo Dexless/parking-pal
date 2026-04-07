@@ -5,17 +5,17 @@ import type { RootStackParamList } from './RootNavigator';
 
 type BackRouteName = 'Home' | 'Map' | 'Login';
 
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList>;
+type Props<RouteName extends keyof RootStackParamList = keyof RootStackParamList> = {
+  navigation: NativeStackNavigationProp<RootStackParamList, RouteName>;
   fallbackRoute: BackRouteName;
   label?: string;
 };
 
-export default function StackBackButton({
+export default function StackBackButton<RouteName extends keyof RootStackParamList>({
   navigation,
   fallbackRoute,
   label = 'Back',
-}: Props) {
+}: Props<RouteName>) {
   return (
     <Pressable
       accessibilityRole="button"

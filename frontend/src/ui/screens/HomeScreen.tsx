@@ -6,7 +6,7 @@ import { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
 import { Video } from 'expo-av';
 import { randomize_all_lot_events } from '../../api/api';
-import { getLang, setLang as saveLang } from "../../langSave";
+import { getLang, setLang as saveLang } from '../../langSave';
 import ProfileTag from '../ProfileTag';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -15,51 +15,52 @@ const VIDEO_WIDTH = 1280;
 const VIDEO_HEIGHT = 720;
 
 export default function HomeScreen({ navigation }: Props) {
-    // translations for spanish
-    const [lang, setLang] = useState<"en" | "es">(getLang());
-    const [langMenuOpen, setLangMenuOpen] = useState(false);
-    // save selection
-    function changeLang(newLang: "en" | "es") {
-      saveLang(newLang);   // update global
-      setLang(newLang);    // update screen UI
-      setLangMenuOpen(false);
-    }
-    
-    // text translations
-    const text = {
-      title: lang === "en" ? "Parking Pal" : "Parking Pal",
-      subtitle: lang === "en" ? "Find campus parking fast." : "Encuentra estacionamiento rápidamente.",
-      openMap: lang === "en" ? "Open Map" : "Abrir Mapa",
-      login: lang === "en" ? "Login" : "Iniciar sesion",
-    };
+  // translations for spanish
+  const [lang, setLang] = useState<'en' | 'es'>(getLang());
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
 
-    useEffect(() => {
+  // save selection
+  function changeLang(newLang: 'en' | 'es') {
+    saveLang(newLang); // update global
+    setLang(newLang); // update screen UI
+    setLangMenuOpen(false);
+  }
+
+  // text translations
+  const text = {
+    title: lang === 'en' ? 'Parking Pal' : 'Parking Pal',
+    subtitle:
+      lang === 'en'
+        ? 'Find campus parking fast.'
+        : 'Encuentra estacionamiento r\u00e1pidamente.',
+    openMap: lang === 'en' ? 'Open Map' : 'Abrir Mapa',
+    login: lang === 'en' ? 'Login' : 'Iniciar sesi\u00f3n',
+  };
+
+  useEffect(() => {
     async function init() {
       try {
         await randomize_all_lot_events(-1, true);
       } catch (err) {
-        console.error("Failed to randomize lots on app start", err);
+        console.error('Failed to randomize lots on app start', err);
       }
     }
 
-    init();
+    void init();
   }, []);
 
-  //Hide header
+  // Hide header
   useEffect(() => {
-      navigation.setOptions({
-        headerShown: false,
-      });
-    }, [navigation]);
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   // Calculate scale to cover the entire screen
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   // Calculate scale to cover the entire screen DO NOT CHANGE THE VIDEO WIDTH AND HEIGHT VARIABLES
-  const scale = Math.max(
-    screenWidth / VIDEO_WIDTH,
-    screenHeight / VIDEO_HEIGHT
-  );
+  const scale = Math.max(screenWidth / VIDEO_WIDTH, screenHeight / VIDEO_HEIGHT);
 
   // Render
   return (
@@ -90,16 +91,10 @@ export default function HomeScreen({ navigation }: Props) {
           </Pressable>
           {langMenuOpen && (
             <View style={styles.langDropdown}>
-              <Pressable
-                style={styles.langOption}
-                onPress={() => changeLang('en')}
-              >
+              <Pressable style={styles.langOption} onPress={() => changeLang('en')}>
                 <Text style={styles.langOptionText}>English</Text>
               </Pressable>
-              <Pressable
-                style={styles.langOption}
-                onPress={() => changeLang('es')}
-              >
+              <Pressable style={styles.langOption} onPress={() => changeLang('es')}>
                 <Text style={styles.langOptionText}>Spanish</Text>
               </Pressable>
             </View>
@@ -111,7 +106,10 @@ export default function HomeScreen({ navigation }: Props) {
         <Text style={styles.title}>{text.title}</Text>
         <Text style={styles.subtitle}>{text.subtitle}</Text>
 
-        <Pressable style={[styles.cta, { backgroundColor: '#808080' }]} onPress={() => navigation.navigate('Map')}>
+        <Pressable
+          style={[styles.cta, { backgroundColor: '#808080' }]}
+          onPress={() => navigation.navigate('Map')}
+        >
           <Text style={styles.ctaText}>{text.openMap}</Text>
         </Pressable>
       </View>
@@ -213,4 +211,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
