@@ -1,16 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 import { LOTS } from '../data/campusLots';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
 import MapboxView, { MapboxViewHandle, type MapboxMarker } from '../MapboxView';
 import { useAuth } from '../AuthContext';
+import { useVehicleEventNotification } from '../VehicleEventNotification';
 import {
   deleteVehiclePin,
   fetchLotFullnessPercentages,
   fetchVehiclePin,
+  simulateVehicleEvent,
   upsertVehiclePin,
   type VehiclePin,
 } from '../../api/api';
@@ -22,10 +24,30 @@ const CAMPUS_BOUNDS = {
   sw: [-119.754337, 36.808416] as [number, number],
   ne: [-119.741531, 36.817459] as [number, number],
 };
+const SIMULATION_MIN_DELAY_MS = 3000;
+const SIMULATION_MAX_DELAY_MS = 10000;
+
+function randomSimulationDelayMs() {
+  return (
+    Math.floor(
+      Math.random() * (SIMULATION_MAX_DELAY_MS - SIMULATION_MIN_DELAY_MS + 1)
+    ) + SIMULATION_MIN_DELAY_MS
+  );
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(100, value));
+}
 
 export default function MapScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const isFocused = useIsFocused();
+  const { hideVehicleEventNotification, showVehicleEventNotification } =
+    useVehicleEventNotification();
   const { loggedIn, userId } = useAuth();
   const mapRef = useRef<MapboxViewHandle>(null);
   const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
@@ -78,6 +100,7 @@ export default function MapScreen() {
     frameHeight = maxHeight;
     frameWidth = frameHeight * MAP_ASPECT;
   }
+
   useEffect(() => {
     let active = true;
     fetchLotFullnessPercentages()
@@ -100,6 +123,56 @@ export default function MapScreen() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isFocused) {
+      hideVehicleEventNotification();
+      return;
+    }
+
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleNextSimulation = () => {
+      if (!active) {
+        return;
+      }
+
+      timer = setTimeout(() => {
+        simulateVehicleEvent()
+          .then((event) => {
+            if (!active) {
+              return;
+            }
+
+            const percentFull = clampPercent(event.lot?.percent_full ?? event.percent_full);
+            setLotFullnessById((current) => ({
+              ...current,
+              [String(event.lot_id)]: percentFull,
+              [event.lot_name]: percentFull,
+            }));
+            showVehicleEventNotification(
+              `vehicle ${event.action} lot ${event.lot_name} now at ${Math.round(percentFull)}% capacity`
+            );
+          })
+          .catch((error) => {
+            console.error('Failed to simulate vehicle event', error);
+          })
+          .finally(() => {
+            scheduleNextSimulation();
+          });
+      }, randomSimulationDelayMs());
+    };
+
+    scheduleNextSimulation();
+
+    return () => {
+      active = false;
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [hideVehicleEventNotification, isFocused, showVehicleEventNotification]);
 
   useEffect(() => {
     if (!loggedIn || !userId) {

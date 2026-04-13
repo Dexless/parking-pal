@@ -1,0 +1,56 @@
+The following packages should be updated for best compatibility with the installed expo version:
+  expo@54.0.15 - expected version: ~54.0.33
+  react-native@0.81.4 - expected version: 0.81.5
+Your project may not work correctly until you install the expected versions of the packages.
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+  console.warn (E:\parking-pal\frontend\node_modules\expo\node_modules\@expo\cli\src\start\server\serverLogLikeMetro.ts:161:21)
+  warnOnce (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\warnOnce\index.js:24:13)
+  createDOMProps (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\createDOMProps\index.js:805:13)
+  createElement (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\createElement\index.js:23:32)
+  Component (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\View\index.js:111:23)
+  Object.callComponentInDEV [as react-stack-bottom-frame] (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8970:18)
+  renderWithHooks (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4699:19)
+  run (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5539:39)
+  retryNode (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5899:31)
+  renderNodeDestructive (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5849:11)
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+  console.warn (E:\parking-pal\frontend\node_modules\expo\node_modules\@expo\cli\src\start\server\serverLogLikeMetro.ts:161:21)
+  warnOnce (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\warnOnce\index.js:24:13)
+  createDOMProps (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\createDOMProps\index.js:805:13)
+  createElement (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\createElement\index.js:23:32)
+  Component (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\View\index.js:111:23)
+  Object.callComponentInDEV [as react-stack-bottom-frame] (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8970:18)
+  renderWithHooks (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4699:19)
+  run (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5539:39)
+  retryNode (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5899:31)
+  renderNodeDestructive (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5849:11)
+Error: Cannot pipe to a closed or destroyed stream
+    at pipelineImpl (node:internal/streams/pipeline:264:15)
+    at node:stream/promises:31:5
+    at new Promise (<anonymous>)
+    at pipeline (node:stream/promises:20:10)
+    at respond (E:\parking-pal\frontend\node_modules\expo-server\src\vendor\http.ts:138:19)
+    at E:\parking-pal\frontend\node_modules\expo-server\src\vendor\http.ts:68:13
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+  console.warn (E:\parking-pal\frontend\node_modules\expo\node_modules\@expo\cli\src\start\server\serverLogLikeMetro.ts:161:21)
+  warnOnce (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\warnOnce\index.js:24:13)
+  createDOMProps (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\createDOMProps\index.js:805:13)
+  createElement (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\createElement\index.js:23:32)
+  Component (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\View\index.js:111:23)
+  Object.callComponentInDEV [as react-stack-bottom-frame] (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8970:18)
+  renderWithHooks (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4699:19)
+  run (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5539:39)
+  retryNode (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5899:31)
+  renderNodeDestructive (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5849:11)
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+  console.warn (E:\parking-pal\frontend\node_modules\expo\node_modules\@expo\cli\src\start\server\serverLogLikeMetro.ts:161:21)
+  warnOnce (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\warnOnce\index.js:24:13)
+  createDOMProps (E:\parking-pal\frontend\node_modules\react-native-web\dist\modules\createDOMProps\index.js:805:13)
+  createElement (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\createElement\index.js:23:32)
+  Component (E:\parking-pal\frontend\node_modules\react-native-web\dist\exports\View\index.js:111:23)
+  Object.callComponentInDEV [as react-stack-bottom-frame] (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:8970:18)
+  renderWithHooks (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:4699:19)
+  run (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5539:39)
+  retryNode (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5899:31)
+  renderNodeDestructive (E:\parking-pal\frontend\node_modules\react-dom\cjs\react-dom-server-legacy.node.development.js:5849:11)

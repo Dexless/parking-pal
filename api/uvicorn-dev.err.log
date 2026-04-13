@@ -1,0 +1,10 @@
+python-dotenv could not parse statement starting at line 1
+python-dotenv could not parse statement starting at line 5
+python-dotenv could not parse statement starting at line 13
+python-dotenv could not parse statement starting at line 1
+python-dotenv could not parse statement starting at line 5
+python-dotenv could not parse statement starting at line 13
+INFO:     Started server process [54900]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)

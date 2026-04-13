@@ -137,6 +137,24 @@ export async function randomize_all_lot_events(
   );
 }
 
+export interface SimulatedVehicleEvent {
+  dt: string;
+  lot_id: number;
+  lot_name: string;
+  is_entering: boolean;
+  action: "entering" | "leaving";
+  percent_full: number;
+  lot: Lot;
+}
+
+export async function simulateVehicleEvent(lot_id?: number) {
+  const path =
+    typeof lot_id === "number"
+      ? `/simulate_vehicle_event?lot_id=${encodeURIComponent(String(lot_id))}`
+      : "/simulate_vehicle_event";
+  return apiClient.post<SimulatedVehicleEvent>(path);
+}
+
 export interface VehiclePin {
   uuid: string;
   lat: number;

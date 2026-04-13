@@ -3,7 +3,8 @@
 from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from datetime import datetime
+from typing import List, Literal, Optional
 from uuid import UUID
 import os
 import httpx
@@ -17,6 +18,15 @@ app = FastAPI(title="ParkingPal API")
 class UserCredentials(BaseModel):
     email: EmailStr
     password: str
+
+class SimulatedVehicleEvent(BaseModel):
+    dt: datetime
+    lot_id: int
+    lot_name: str
+    is_entering: bool
+    action: Literal["entering", "leaving"]
+    percent_full: float
+    lot: lh.LotSummary
 
 # compute crowd state
 def full_type(p: float) -> str:
@@ -227,4 +237,30 @@ async def randomize_lot(lot_id: int):
 
     updated_lot = ldb.fetch_lot_by_id(lot_id)
     return to_summary(updated_lot)
+
+
+@app.post("/simulate_vehicle_event", response_model=SimulatedVehicleEvent)
+async def simulate_vehicle_event(lot_id: Optional[int] = Query(None, description="Optional lot ID to simulate")):
+    try:
+        vehicle = ddb.simulate_single_entry(-1 if lot_id is None else lot_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if vehicle is None:
+        raise HTTPException(status_code=409, detail="Could not simulate vehicle event for the selected lot.")
+
+    updated_lot = ldb.fetch_lot_by_id(vehicle.lot_id)
+    if not updated_lot:
+        raise HTTPException(status_code=404, detail="Lot not found")
+
+    lot_summary = to_summary(updated_lot)
+    return SimulatedVehicleEvent(
+        dt=vehicle.dt,
+        lot_id=vehicle.lot_id,
+        lot_name=lot_summary.lot_name,
+        is_entering=vehicle.is_entering,
+        action="entering" if vehicle.is_entering else "leaving",
+        percent_full=lot_summary.percent_full,
+        lot=lot_summary,
+    )
 

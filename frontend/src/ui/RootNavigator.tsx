@@ -8,6 +8,7 @@ import LoginScreen from './screens/LoginScreen';
 import { COLORS } from './screens/colors';
 import ProfileTag from './ProfileTag';
 import StackBackButton from './StackBackButton';
+import { VehicleEventNotificationProvider } from './VehicleEventNotification';
 
 // Define the type for the root stack parameters
 export type RootStackParamList = {
@@ -22,55 +23,57 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={({ navigation }) => ({
-        headerStyle: {
-          backgroundColor: COLORS.bg,
-        },
-        headerTintColor: '#ffffff',
-        headerTitleStyle: {
-          color: '#ffffff',
-          fontWeight: '600',
-        },
-        headerShadowVisible: false,
-        headerRight: () => <ProfileTag navigation={navigation} variant="header" />,
-      })}
-    >
-      <Stack.Screen // Home screen
-        name="Home"
-        component={HomeScreen}
-        options={{ title: 'Parking Pal' }}
-      />
-      <Stack.Screen // Map screen
-        name="Map"
-        component={MapScreen}
-        options={({ navigation }) => ({
-          title: 'Campus Map',
-          headerLeft: () => (
-            <StackBackButton navigation={navigation} fallbackRoute="Home" />
-          ),
+    <VehicleEventNotificationProvider>
+      <Stack.Navigator
+        screenOptions={({ navigation }) => ({
+          headerStyle: {
+            backgroundColor: COLORS.bg,
+          },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: {
+            color: '#ffffff',
+            fontWeight: '600',
+          },
+          headerShadowVisible: false,
+          headerRight: () => <ProfileTag navigation={navigation} variant="header" />,
         })}
-      />
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={({ navigation }) => ({
-          title: 'Login',
-          headerLeft: () => (
-            <StackBackButton navigation={navigation} fallbackRoute="Home" />
-          ),
-        })}
-      />
-      <Stack.Screen // Lot details screen
-        name="LotDetails"
-        component={LotDetailsScreen}
-        options={({ navigation }) => ({
-          title: 'Lot Details',
-          headerLeft: () => (
-            <StackBackButton navigation={navigation} fallbackRoute="Map" />
-          ),
-        })}
-      />
-    </Stack.Navigator>
+      >
+        <Stack.Screen // Home screen
+          name="Home"
+          component={HomeScreen}
+          options={{ title: 'Parking Pal' }}
+        />
+        <Stack.Screen // Map screen
+          name="Map"
+          component={MapScreen}
+          options={({ navigation }) => ({
+            title: 'Campus Map',
+            headerLeft: () => (
+              <StackBackButton navigation={navigation} fallbackRoute="Home" />
+            ),
+          })}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={({ navigation }) => ({
+            title: 'Login',
+            headerLeft: () => (
+              <StackBackButton navigation={navigation} fallbackRoute="Home" />
+            ),
+          })}
+        />
+        <Stack.Screen // Lot details screen
+          name="LotDetails"
+          component={LotDetailsScreen}
+          options={({ navigation }) => ({
+            title: 'Lot Details',
+            headerLeft: () => (
+              <StackBackButton navigation={navigation} fallbackRoute="Map" />
+            ),
+          })}
+        />
+      </Stack.Navigator>
+    </VehicleEventNotificationProvider>
   );
 }

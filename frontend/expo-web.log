@@ -1,0 +1,31 @@
+
+> parking-pal@1.0.0 web
+> expo start --web --localhost --port 8081
+
+Starting project at E:\parking-pal\frontend
+React Compiler enabled
+Starting Metro Bundler
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ node_modules\expo-router\node\render.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 2014ms node_modules\expo-router\node\render.js (1158 modules)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.9% (518/521)
+Waiting on http://localhost:8081
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.9% (518/521)
+Logs for your project will appear below.
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.9% (518/521)
+λ Bundled 9ms node_modules\expo-router\node\render.js (1 module)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (521/521)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 18037ms node_modules\expo\AppEntry.js (521 modules)
+Web node_modules\expo\AppEntry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (521/521)
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 9408ms node_modules\expo\AppEntry.js (1 module)
+Web Bundled 384ms node_modules\expo\AppEntry.js (522 modules)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\expo\AppEntry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 120ms node_modules\expo-router\node\render.js (1 module)
+λ Bundled 105ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 2890ms node_modules\expo\AppEntry.js (1 module)
+Web Bundled 1324ms node_modules\expo\AppEntry.js (1 module)
+Web Bundled 28ms node_modules\expo\AppEntry.js (1 module)
+ LOG  [web] Logs will appear in the browser console

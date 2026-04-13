@@ -1,0 +1,23 @@
+INFO:     127.0.0.1:62845 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64367 - "OPTIONS /randomize_all_lot_events/-1/true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64367 - "POST /randomize_all_lot_events/-1/true HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:56957 - "GET /lots_percent_full HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64367 - "OPTIONS /simulate_vehicle_event HTTP/1.1" 200 OK
+Lot ID: 3, Current: 240, Capacity: 453, Full%: 52, Random CF: 0.9397450629609557
+INFO:     127.0.0.1:64367 - "POST /simulate_vehicle_event HTTP/1.1" 200 OK
+Lot ID: 2, Current: 48, Capacity: 191, Full%: 25, Random CF: 0.662145110517095
+INFO:     127.0.0.1:51844 - "POST /simulate_vehicle_event HTTP/1.1" 200 OK
+Fetching lot ID: 0
+INFO:     127.0.0.1:50337 - "GET /lots/0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64532 - "GET /lots_percent_full HTTP/1.1" 200 OK
+Lot ID: 4, Current: 79, Capacity: 318, Full%: 24, Random CF: 0.5876324908607167
+INFO:     127.0.0.1:64532 - "POST /simulate_vehicle_event HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50337 - "POST /randomize_all_lot_events/-1/true HTTP/1.1" 204 No Content
+INFO:     127.0.0.1:56012 - "GET /lots_percent_full HTTP/1.1" 200 OK
+Lot ID: 4, Current: 329, Capacity: 485, Full%: 67, Random CF: 0.46477946941253956
+INFO:     127.0.0.1:57875 - "POST /simulate_vehicle_event HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57886 - "GET /lots_percent_full HTTP/1.1" 200 OK
+Lot ID: 4, Current: 330, Capacity: 485, Full%: 68, Random CF: 0.2093665108668561
+INFO:     127.0.0.1:53446 - "POST /simulate_vehicle_event HTTP/1.1" 200 OK
+Lot ID: 11, Current: 80, Capacity: 457, Full%: 17, Random CF: 0.032600244250618804
+INFO:     127.0.0.1:53446 - "POST /simulate_vehicle_event HTTP/1.1" 200 OK

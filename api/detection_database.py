@@ -5,11 +5,8 @@ import lot_database as ldb
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 
-
-
 START_TIME = 7      # 7 AM
 END_TIME   = 20     # 8 PM
-
 
 # Set dict to correspond lot_id to lot_name
 EVENTS_TABLE = "parking_events"
@@ -19,24 +16,27 @@ class Vehicle(BaseModel):
     is_entering: bool       #1 is entering, 0 is exiting 
     lot_id: int
 
-
-
 # takes a Vehicle Obj and adds it to the parking_events table
 # lot_id | lot_name | total_capacity | current |  type   |  hours
 def insert_vehicle_entry(vehicle: Vehicle):
-
-    connection = lh.establish_connection()
-    cursor = connection.cursor()
-
     lot_id = vehicle.lot_id
     is_entering = vehicle.is_entering
 
     lot = ldb.fetch_lot_by_id(lot_id)
+    if lot is None:
+        print(f"Error lot_id {lot_id} does not exist.")
+        return None
+
+    if is_entering and ((lot.current + 1) > lot.total_capacity):
+        print("Error lot_capacity can not exceed total capacity.")
+        return None
 
     if not is_entering and ((lot.current - 1) < 0):
         print("Error lot_capacity can not be less than 0.")
-        return
+        return None
 
+    connection = lh.establish_connection()
+    cursor = connection.cursor()
 
     insert_query = f"""
     INSERT INTO {EVENTS_TABLE} (dt, is_entering, lot_id)
@@ -47,23 +47,25 @@ def insert_vehicle_entry(vehicle: Vehicle):
     vehicle.dt = vehicle.dt.replace(microsecond=0)
 
     cursor.execute(insert_query, (vehicle.dt, vehicle.is_entering, vehicle.lot_id))
-    connection.commit()
-
 
     # Now we update lots table current count based on lot_id and is_entering
     # check if the lot_id is at max capacity or 0 before updating
     if is_entering:
-        lh.update_lots_current(True, lot_id)
+        cursor.execute("UPDATE lots SET current = current + 1 WHERE lot_id = %s;", (lot_id,))
     else:
-        lh.update_lots_current(False, lot_id)
+        cursor.execute("UPDATE lots SET current = current - 1 WHERE lot_id = %s;", (lot_id,))
+
+    connection.commit()
 
     cursor.close()
     connection.close()
 
+    return vehicle
+
 
 
 # Lot of math here get ready
-def progress_time(dt: datetime, tails = 0.05) -> datetime:
+def _progress_time(dt: datetime, tails = 0.05) -> datetime:
     skew = 0
 
     # We flip a weighted coin where p_tails happens 5% of the time and heas happens 95 % of the time
@@ -85,11 +87,20 @@ def progress_time(dt: datetime, tails = 0.05) -> datetime:
     # Add the skew to previous time so DES steps are progressive
     future_date = dt + timedelta(minutes=skew)
     if future_date.hour >= END_TIME:
-        future_date = future_date.replace(day=future_date.day + 1, hour=START_TIME, minute=0, second=0, microsecond=0)
+        future_date = (future_date + timedelta(days=1)).replace(hour=START_TIME, minute=0, second=0, microsecond=0)
     return future_date
 
-def randomizeIsEntering(lot_id: int) -> bool:
+def _randomizeIsEntering(lot_id: int) -> bool:
     lot = ldb.fetch_lot_by_id(lot_id)
+    if lot is None:
+        raise ValueError(f"Lot {lot_id} does not exist.")
+    if lot.total_capacity <= 0:
+        raise ValueError(f"Lot {lot_id} has no capacity.")
+    if lot.current <= 0:
+        return True
+    if lot.current >= lot.total_capacity:
+        return False
+
     lot_full_percent = int((lot.current / lot.total_capacity) * 100)
     cf = random.random()
 
@@ -108,51 +119,46 @@ def randomizeIsEntering(lot_id: int) -> bool:
             return False
     return random.choice([True, False])
 
-def fab_vehicle_entry(input_lot: int = -1):
-    connection = lh.establish_connection()
-    cursor = connection.cursor()
+def _select_lot_id(input_lot: int = -1) -> int:
+    if input_lot >= 0:
+        return input_lot
+    return random.choice(list(lh.lot_dict().keys()))
 
-    cursor.execute(f"SELECT COUNT(*) FROM {EVENTS_TABLE};")
-    check_empty = cursor.fetchone()[0]
 
-    # DATABASE STRUCTURE
-    # dt | is_entering | lot_id
-    if check_empty == 0:
-        check_empty = False
-        time = datetime.now()
+def fab_vehicle_entry(input_lot: int = -1, select_dt: datetime | None = None):
+    lot_id = _select_lot_id(input_lot)
+    event_dt = select_dt or datetime.now()
+    is_entering = _randomizeIsEntering(lot_id)
 
-        if time.hour < START_TIME:
-            time = time.replace(hour=START_TIME, minute=0, second=0, microsecond=0)
-        elif time.hour >= END_TIME:
-            time = (time + timedelta(days=1)).replace(
-                hour=START_TIME, minute=0, second=0, microsecond=0)
+    v = Vehicle(dt=event_dt, is_entering=is_entering, lot_id=lot_id)
 
-        is_entering = randomizeIsEntering(input_lot)
-        lot_id = input_lot
+    return v
 
-        v = Vehicle(dt = time, is_entering = is_entering, lot_id= lot_id)
-        insert_vehicle_entry(v)
-        return
+def simulate_single_entry(input_lot: int = -1, select_dt: datetime | None = None):
+    v = fab_vehicle_entry(input_lot, select_dt)
+    return insert_vehicle_entry(v)
+
+def simulate(days: int = 0, itterations: int = 0, input_lot: int = -1):
+    vehicles = []
+    if (days >= 1 and itterations >= 1) or days < 0 or itterations < 0 or (days == 0 and itterations == 0):
+        print("Error: Please only specify either days or itterations, not both (or neither).")
+        return vehicles
     
-    # Create one datetime object to base future entries off of
-    # Make sure that the table is not empty otherwise we cannot base time off of
-    # previous entry
-    cursor.execute(f"SELECT * FROM {EVENTS_TABLE} ORDER BY dt DESC LIMIT 1")
-    recent_dt = cursor.fetchone()[0]
+    if days >= 1:
+        end_dt = datetime.now() + timedelta(days=days)
+        v = simulate_single_entry(input_lot)
+        while v is not None and v.dt < end_dt:
+            vehicles.append(v)
+            v = simulate_single_entry(input_lot, _progress_time(v.dt))
+        
+    else:
+        for i in range(itterations):
+            v = simulate_single_entry(input_lot)
+            if v is not None:
+                vehicles.append(v)
 
-    time = progress_time(recent_dt)
-
-    is_entering = randomizeIsEntering(input_lot)
-    lot_id = random.randint(0,10)
-
-    v = Vehicle(dt = time, is_entering = is_entering, lot_id= input_lot)
-    insert_vehicle_entry(v)
-
-    cursor.close()
-    connection.close()
-
-    return
-
+    return vehicles
+    
 
 if __name__ == "__main__":
     #Debugging area :^)

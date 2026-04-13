@@ -102,7 +102,15 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           return null;
         }
         if (mapSize.width <= 0 || mapSize.height <= 0) {
-          return await mapViewRef.current.getCenter();
+          const center = await mapViewRef.current.getCenter();
+          if (!center || center.length < 2) {
+            return null;
+          }
+          const [lng, lat] = center;
+          if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+            return null;
+          }
+          return [lng, lat];
         }
 
         try {
@@ -120,7 +128,15 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           }
           return [lng, lat];
         } catch {
-          return await mapViewRef.current.getCenter();
+          const center = await mapViewRef.current.getCenter();
+          if (!center || center.length < 2) {
+            return null;
+          }
+          const [lng, lat] = center;
+          if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+            return null;
+          }
+          return [lng, lat];
         }
       },
     }));

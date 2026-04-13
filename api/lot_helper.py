@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-
 import psycopg2
 from dotenv import load_dotenv
 from pydantic import BaseModel
