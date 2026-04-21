@@ -44,6 +44,21 @@ def lot_dict():
     lot_dict = {0: "P1", 1: "P2", 2: "P3", 3: "P5", 4: "P6", 5: "P9", 6: "P10", 7: "P11", 8: "P13", 9: "P15", 10: "P20", 11: "P27"}
     return lot_dict
 
+def get_lot_current_and__total_capacity(lot_id: int) -> int:
+    connection = establish_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT current, total_capacity FROM lots WHERE lot_id = %s;", (lot_id,))
+    row = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if row is None:
+        return None
+
+    return row[0], row[1]
+
 def update_lots_current(is_entering: bool, lot_id: int):
     import lot_database as ldb
     connection = establish_connection()

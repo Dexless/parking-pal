@@ -32,6 +32,18 @@ def test_randomize_lot_data_runs_without_error():
     assert isinstance(lots, list)
     assert len(lots) >= 0
 
+def test_simulate_single_entry():
+    v = ddb.simulate_single_entry()
+    assert v is not None, "simulate_single_entry() should return a Vehicle"
+    assert isinstance(v, ddb.Vehicle), "simulate_single_entry() should return a Vehicle instance"
+
+def test_simulate_multiple_entries():
+    vehicles = ddb.simulate(itterations=10)
+    assert isinstance(vehicles, list), "simulate() should return a list"
+    assert len(vehicles) == 10, "simulate() should return the correct number of entries"
+    for v in vehicles:
+        assert isinstance(v, ddb.Vehicle), "simulate() should return a list of Vehicle instances"
+
 
 # Detection Database Tests (detection_database)
 def test_insert_and_fetch_vehicle_entries():

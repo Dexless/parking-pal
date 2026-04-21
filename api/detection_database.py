@@ -136,7 +136,7 @@ def fab_vehicle_entry(input_lot: int = -1, select_dt: datetime | None = None):
 
 def simulate_single_entry(input_lot: int = -1, select_dt: datetime | None = None):
     v = fab_vehicle_entry(input_lot, select_dt)
-    return insert_vehicle_entry(v)
+    return v
 
 def simulate(days: int = 0, itterations: int = 0, input_lot: int = -1):
     vehicles = []
