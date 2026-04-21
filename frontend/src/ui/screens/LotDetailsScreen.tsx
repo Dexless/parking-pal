@@ -1,47 +1,76 @@
 // src/app/screens/LotDetailsScreen.tsx
-import React, { useMemo, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import { getLang } from '../../langSave';
+import { fetchLotData, fetchLotFullnessPercentages, Lot as LotData, randomizeData } from '../../api/api';
+import MapboxView from '../MapboxView';
 import type { RootStackParamList } from '../RootNavigator';
 import { LOTS } from '../data/campusLots';
-import {
-  fetchLotData,
-  fetchLotFullnessPercentages,
-  Lot as LotData,
-  randomizeData,
-} from '../../api/api';
 import { COLORS } from './colors';
-import MapboxView from '../MapboxView';
-import { getLang } from "../../langSave";
 
-
-// Define route prop type for LotDetails screen
 type DetailsRoute = RouteProp<RootStackParamList, 'LotDetails'>;
 
-// Aspect ratio of the campus map
+type PopularTimesBar = {
+  hour: string;
+  busynessPercent: number;
+};
+
 const MAP_ASPECT = 1692 / 1306;
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
+const STACKED_LAYOUT_BREAKPOINT = 1080;
+const CONDENSED_LABEL_BREAKPOINT = 780;
+const POPULAR_TIMES_HOURS = [
+  '7AM',
+  '8AM',
+  '9AM',
+  '10AM',
+  '11AM',
+  '12PM',
+  '1PM',
+  '2PM',
+  '3PM',
+  '4PM',
+  '5PM',
+  '6PM',
+  '7PM',
+  '8PM',
+];
+const POPULAR_TIMES_SEED = [0.2, 0.8, 0.5, 0.7, 0.8, 0.95, 0.9, 0.7, 0.8, 0.7, 0.5, 0.4, 0.25, 0.1];
+const CONDENSED_LABEL_TICKS = new Set(['7AM', '12PM', '5PM', '8PM']);
+const POPULAR_TIMES_BAR_HEIGHT = 144;
+const POPULAR_TIMES_HOUR_SET = new Set(POPULAR_TIMES_HOURS);
+
 const LOT_ZOOM_BY_ID: Record<number, number> = {
   5: 16.35,
   6: 16.35,
   7: 16.24,
   8: 16.31,
 };
+
 const LOT_CENTER_BY_ID: Record<number, [number, number]> = {
-  0: [-119.74342508745244, 36.80923189599102], // P1
-  1: [-119.74166555831523, 36.80981600558881], // P2
-  2: [-119.74048538633294, 36.809721517573664], // P3
-  3: [-119.74165482947902, 36.811637024554656], // P5
-  4: [-119.74179430434965, 36.813277622474885], // P6
-  5: [-119.73732092009323, 36.81552835961807], // P9
-  6: [-119.73689981327732, 36.81643451204332], // P10
-  7: [-119.74051051511327, 36.816030994446606], // P11
-  8: [-119.74309839830818, 36.81570229017987], // P13
-  9: [-119.74494107591363, 36.81495288283217], // P15
-  10: [-119.75055517196566, 36.816784851359024], // P20
-  11: [-119.75311397153347, 36.810104511706214], // P27
+  0: [-119.74342508745244, 36.80923189599102],
+  1: [-119.74166555831523, 36.80981600558881],
+  2: [-119.74048538633294, 36.809721517573664],
+  3: [-119.74165482947902, 36.811637024554656],
+  4: [-119.74179430434965, 36.813277622474885],
+  5: [-119.73732092009323, 36.81552835961807],
+  6: [-119.73689981327732, 36.81643451204332],
+  7: [-119.74051051511327, 36.816030994446606],
+  8: [-119.74309839830818, 36.81570229017987],
+  9: [-119.74494107591363, 36.81495288283217],
+  10: [-119.75055517196566, 36.816784851359024],
+  11: [-119.75311397153347, 36.810104511706214],
 };
 
 const STATE_RGB: Record<string, [number, number, number]> = {
@@ -52,31 +81,126 @@ const STATE_RGB: Record<string, [number, number, number]> = {
   FULL: [204, 0, 0],
 };
 
+const POPULAR_TIMES_PROFILE: PopularTimesBar[] = POPULAR_TIMES_HOURS.map((hour, index) => ({
+  hour,
+  busynessPercent: POPULAR_TIMES_SEED[index] * 100,
+}));
+
+function getCurrentPopularTimesHour(date: Date): string | null {
+  const rawHour = date.getHours();
+  const normalizedHour = rawHour % 12 || 12;
+  const meridiem = rawHour >= 12 ? 'PM' : 'AM';
+  const label = `${normalizedHour}${meridiem}`;
+
+  return POPULAR_TIMES_HOUR_SET.has(label) ? label : null;
+}
+
+function PopularTimesSection({
+  bars,
+  title,
+  dayLabel,
+  condensedLabels,
+  currentHour,
+  nowLabel,
+  currentLotColor,
+}: {
+  bars: PopularTimesBar[];
+  title: string;
+  dayLabel: string;
+  condensedLabels: boolean;
+  currentHour: string | null;
+  nowLabel: string;
+  currentLotColor?: string;
+}) {
+  const peak = bars.reduce((maxValue, bar) => Math.max(maxValue, bar.busynessPercent), 0);
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.popularTimesHeader}>
+        <Text style={styles.popularTimesTitle}>{title}</Text>
+        <Text style={styles.popularTimesDay}>{dayLabel}</Text>
+      </View>
+
+      <View style={styles.popularTimesChart}>
+        <View style={styles.popularTimesBaseline} />
+        <View style={styles.popularTimesRow}>
+          {bars.map((bar) => {
+            const clampedPercent = Math.max(0, Math.min(100, bar.busynessPercent));
+            const barHeight = Math.max(8, (clampedPercent / 100) * POPULAR_TIMES_BAR_HEIGHT);
+            const isPeak = peak > 0 && bar.busynessPercent === peak;
+            const isCurrentHour = currentHour === bar.hour;
+            const showLabel = !condensedLabels || CONDENSED_LABEL_TICKS.has(bar.hour);
+
+            return (
+              <View key={bar.hour} style={styles.popularTimesBarGroup}>
+                <Text style={[styles.popularTimesNowLabel, !isCurrentHour && styles.popularTimesNowLabelHidden]}>
+                  {isCurrentHour ? nowLabel : ' '}
+                </Text>
+                <View style={styles.popularTimesTrack}>
+                  <View
+                    style={[
+                      styles.popularTimesFill,
+                      isCurrentHour && currentLotColor
+                        ? styles.popularTimesFillCurrentCustom
+                        : isCurrentHour
+                          ? styles.popularTimesFillCurrent
+                          : isPeak
+                            ? styles.popularTimesFillPeak
+                            : styles.popularTimesFillBase,
+                      isCurrentHour && currentLotColor && { backgroundColor: currentLotColor },
+                      { height: barHeight },
+                    ]}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.popularTimesLabel,
+                    isCurrentHour && styles.popularTimesLabelCurrent,
+                    !showLabel && styles.popularTimesLabelHidden,
+                  ]}
+                >
+                  {showLabel ? bar.hour : ' '}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function LotDetailsScreen() {
-  // translations for spanish
-  const [lang] = useState<"en" | "es">(getLang());
+  const [lang] = useState<'en' | 'es'>(getLang());
+  const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
+  const { width } = useWindowDimensions();
+  const isStackedLayout = width < STACKED_LAYOUT_BREAKPOINT;
+  const shouldCondenseHistogramLabels = width < CONDENSED_LABEL_BREAKPOINT;
 
   const text = {
     capacitySubtitle:
-      lang === "en"
-        ? "Live capacity and recent readings."
-        : "Capacidad en vivo y lecturas recientes.",
-    total: lang === "en" ? "Total Spaces" : "Espacios Totales",
-    occupied: lang === "en" ? "Occupied" : "Ocupados",
-    available: lang === "en" ? "Available" : "Disponibles",
-    crowd: lang === "en" ? "Crowd" : "Afluencia",
-    hours: lang === "en" ? "Hours" : "Horario",
-    type: lang === "en" ? "Type" : "Tipo",
-    back: lang === "en" ? "Back to Map" : "Volver al Mapa",
-    notFound: lang === "en" ? "Lot not found" : "Lote no encontrado",
+      lang === 'en'
+        ? 'Live capacity and recent readings.'
+        : 'Capacidad en vivo y lecturas recientes.',
+    total: lang === 'en' ? 'Total Spaces' : 'Espacios Totales',
+    occupied: lang === 'en' ? 'Occupied' : 'Ocupados',
+    available: lang === 'en' ? 'Available' : 'Disponibles',
+    crowd: lang === 'en' ? 'Crowd' : 'Afluencia',
+    hours: lang === 'en' ? 'Hours' : 'Horario',
+    type: lang === 'en' ? 'Type' : 'Tipo',
+    back: lang === 'en' ? 'Back to Map' : 'Volver al Mapa',
+    notFound: lang === 'en' ? 'Lot not found' : 'Lote no encontrado',
+    popularTimes: lang === 'en' ? 'Popular times' : 'Horas populares',
+    typicalWeekday: lang === 'en' ? 'Typical weekday' : 'Dia tipico entre semana',
+    now: lang === 'en' ? 'Now' : 'Ahora',
   };
 
   const statusText = {
-    full: lang === "en" ? "Full" : "Lleno",
-    plenty: lang === "en" ? "Plenty of spaces" : "Muchos espacios",
-    some: lang === "en" ? "Some spaces" : "Algunos espacios",
-    limited: lang === "en" ? "Limited" : "Limitado",
-    loading: lang === "en" ? "Loading…" : "Cargando…",
+    full: lang === 'en' ? 'Full' : 'Lleno',
+    plenty: lang === 'en' ? 'Plenty of spaces' : 'Muchos espacios',
+    some: lang === 'en' ? 'Some spaces' : 'Algunos espacios',
+    limited: lang === 'en' ? 'Limited' : 'Limitado',
+    loading: lang === 'en' ? 'Loading...' : 'Cargando...',
   };
 
   const navigation =
@@ -84,44 +208,86 @@ export default function LotDetailsScreen() {
   const route = useRoute<DetailsRoute>();
   const { lotId } = route.params;
   const lotCenter = LOT_CENTER_BY_ID[lotId] ?? CAMPUS_CENTER;
-
-  const lot = useMemo(() => LOTS.find(l => l.id === lotId), [lotId]);
-  const [lotData, setLotData] = useState<LotData | null>(null);
-  const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
   const lotZoom = LOT_ZOOM_BY_ID[lotId] ?? CAMPUS_ZOOM;
 
-  //Fetch lot data from API, if it fails, call randomize endpoint
+  const lot = useMemo(() => LOTS.find((entry) => entry.id === lotId), [lotId]);
+  const [lotData, setLotData] = useState<LotData | null>(null);
+  const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
+
   useEffect(() => {
-    fetchLotData(lotId)
-      .then(setLotData)
-      .catch(() => {
-        randomizeData(lotId);
-      });
+    const intervalId = setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, 60000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLotDetails() {
+      try {
+        const nextLotData = await fetchLotData(lotId);
+        if (active) {
+          setLotData(nextLotData);
+        }
+      } catch {
+        try {
+          await randomizeData(lotId);
+          const nextLotData = await fetchLotData(lotId);
+          if (active) {
+            setLotData(nextLotData);
+          }
+        } catch {
+          if (active) {
+            setLotData(null);
+          }
+        }
+      }
+    }
+
+    void loadLotDetails();
+
+    return () => {
+      active = false;
+    };
   }, [lotId]);
 
   useEffect(() => {
     let active = true;
+
     fetchLotFullnessPercentages()
       .then((byId) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
+
         const next: Record<string, number> = {};
         LOTS.forEach((lotEntry) => {
           const percent = byId[String(lotEntry.id)];
-          if (typeof percent !== 'number' || !Number.isFinite(percent)) return;
+          if (typeof percent !== 'number' || !Number.isFinite(percent)) {
+            return;
+          }
+
           next[String(lotEntry.id)] = percent;
           next[lotEntry.name] = percent;
         });
+
         setLotFullnessById(next);
       })
       .catch(() => {
-        if (active) setLotFullnessById({});
+        if (active) {
+          setLotFullnessById({});
+        }
       });
+
     return () => {
       active = false;
     };
   }, []);
 
-  // Math
   const total = lotData?.total_capacity ?? null;
   const occupied = lotData?.current ?? null;
   const available =
@@ -130,19 +296,22 @@ export default function LotDetailsScreen() {
     typeof lotData?.percent_full === 'number'
       ? Math.min(100, Math.max(0, lotData.percent_full))
       : null;
-
-  const percentLabel =
-    percentFull != null ? `${percentFull.toFixed(1)}% full` : '—';
+  const percentLabel = percentFull != null ? `${percentFull.toFixed(1)}% full` : '--';
+  const currentPopularTimesHour = getCurrentPopularTimesHour(new Date(currentTimestamp));
 
   let statusChip = statusText.loading;
 
   if (total != null && available != null) {
-    if (available <= 0) statusChip = statusText.full;
-    else if (available >= total * 0.4) statusChip = statusText.plenty;
-    else if (available >= total * 0.15) statusChip = statusText.some;
-    else statusChip = statusText.limited;
+    if (available <= 0) {
+      statusChip = statusText.full;
+    } else if (available >= total * 0.4) {
+      statusChip = statusText.plenty;
+    } else if (available >= total * 0.15) {
+      statusChip = statusText.some;
+    } else {
+      statusChip = statusText.limited;
+    }
   }
-
 
   let barColor = COLORS.accent;
   const crowdState = lotData?.state;
@@ -151,37 +320,28 @@ export default function LotDetailsScreen() {
     barColor = `rgb(${r},${g},${b})`;
   }
 
-  // If lot not found
   if (!lot) {
     return (
       <View style={styles.screen}>
-        <View style={styles.contentRow}>
-          <View style={styles.leftPane}>
-
-            <Text style={styles.title}>{text.notFound}</Text>
-            <Pressable
-              style={styles.btn}
-              onPress={() => navigation.navigate('Map')}
-            >
-              <Text style={styles.btnText}>{text.back}</Text>
-            </Pressable>
-          </View>
+        <View style={styles.notFoundWrap}>
+          <Text style={styles.title}>{text.notFound}</Text>
+          <Pressable style={styles.btn} onPress={() => navigation.navigate('Map')}>
+            <Text style={styles.btnText}>{text.back}</Text>
+          </Pressable>
         </View>
       </View>
     );
   }
 
-  // Define text sizes
-  const textSizeSmall = 16;
-  const textSizeLarge = 28;
-
-  // if lot is found, display details
   return (
-    <View style={styles.screen}>
-      <View style={styles.contentRow}>
-        <View style={styles.leftPane}>
-
-          <Text style={[styles.title, { fontSize: textSizeLarge }]}>{lot.name}</Text>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.contentRow, isStackedLayout && styles.contentRowStacked]}>
+        <View style={[styles.leftPane, isStackedLayout && styles.leftPaneStacked]}>
+          <Text style={styles.lotTitle}>{lot.name}</Text>
           <Text style={styles.sub}>{text.capacitySubtitle}</Text>
 
           <View style={styles.card}>
@@ -207,43 +367,56 @@ export default function LotDetailsScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statCard}>
                 <Text style={styles.statLabel}>{text.total}</Text>
-                <Text style={styles.statValue}>
-                  {total != null ? total : '—'}
-                </Text>
+                <Text style={styles.statValue}>{total != null ? total : '--'}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statLabel}>{text.occupied}</Text>
-                <Text style={styles.statValue}>
-                  {occupied != null ? occupied : '—'}
-                </Text>
+                <Text style={styles.statValue}>{occupied != null ? occupied : '--'}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statLabel}>{text.available}</Text>
-                <Text style={styles.statValue}>
-                  {available != null ? available : '—'}
-                </Text>
+                <Text style={styles.statValue}>{available != null ? available : '--'}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statLabel}>{text.crowd}</Text>
-                <Text style={styles.statValue}>
-                  {lotData ? lotData.state : '—'}
-                </Text>
+                <Text style={styles.statValue}>{lotData ? lotData.state : '--'}</Text>
               </View>
             </View>
 
             <View style={styles.extraInfo}>
-              <Text style={{ color: '#e5e7eb', fontSize: textSizeSmall }}>
-                {text.hours}: {lotData ? lotData.hours : '—'}
+              <Text style={styles.extraInfoText}>
+                {text.hours}: {lotData ? lotData.hours : '--'}
               </Text>
-              <Text style={{ color: '#e5e7eb', fontSize: textSizeSmall }}>
-                {text.type}: {lotData ? lotData.type : '—'}
+              <Text style={styles.extraInfoText}>
+                {text.type}: {lotData ? lotData.type : '--'}
               </Text>
             </View>
           </View>
 
+          <View style={styles.histogramWrap}>
+            <PopularTimesSection
+              bars={useMemo(
+                () =>
+                  POPULAR_TIMES_PROFILE.map((bar) => ({
+                    ...bar,
+                    busynessPercent:
+                      currentPopularTimesHour === bar.hour && percentFull != null
+                        ? percentFull
+                        : bar.busynessPercent,
+                  })),
+                [currentPopularTimesHour, percentFull]
+              )}
+              title={text.popularTimes}
+              dayLabel={text.typicalWeekday}
+              condensedLabels={shouldCondenseHistogramLabels}
+              currentHour={currentPopularTimesHour}
+              nowLabel={text.now}
+              currentLotColor={barColor}
+            />
+          </View>
         </View>
 
-        <View style={styles.rightPane}>
+        <View style={[styles.rightPane, isStackedLayout && styles.rightPaneStacked]}>
           <View style={[styles.card, styles.mapCard]}>
             <View style={styles.mapOuter}>
               <View style={styles.mapInner}>
@@ -259,63 +432,86 @@ export default function LotDetailsScreen() {
           </View>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    flexDirection: 'row',
     backgroundColor: COLORS.bg,
+  },
+  scrollContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 24,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   contentRow: {
+    width: '100%',
+    maxWidth: 1400,
     flexDirection: 'row',
-    width: '85%',
+    alignItems: 'flex-start',
   },
-  leftPane: { // Left pane styles definition
+  contentRowStacked: {
+    flexDirection: 'column',
+  },
+  leftPane: {
     flex: 1,
+    minWidth: 0,
     padding: 16,
-    justifyContent: 'flex-start',
     marginRight: 8,
   },
-  rightPane: { // Right pane styles definition
+  leftPaneStacked: {
+    width: '100%',
+    marginRight: 0,
+    marginBottom: 16,
+  },
+  rightPane: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    minWidth: 0,
     padding: 12,
+    marginLeft: 8,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
-    marginLeft: 8,
   },
-  divider: { // Divider styles definition
-    width: 1,
-    backgroundColor: COLORS.textSecondary,
-    marginVertical: 24,
-    alignSelf: 'stretch',
+  rightPaneStacked: {
+    width: '100%',
+    marginLeft: 0,
   },
-  mapOuter: { // Map outer container styles definition
+  notFoundWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    padding: 24,
+  },
+  mapOuter: {
     width: '100%',
     aspectRatio: MAP_ASPECT,
     overflow: 'hidden',
   },
-  mapInner: { // Map inner container styles definition
+  mapInner: {
     flex: 1,
     position: 'relative',
   },
-  title: { // Title text styles definition
+  title: {
     fontSize: 24,
     fontWeight: '800',
     marginBottom: 6,
     color: COLORS.textPrimary,
   },
-  sub: { // Subtitle text styles definition
+  lotTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 6,
+    color: COLORS.textPrimary,
+  },
+  sub: {
     color: COLORS.textSecondary,
     marginBottom: 16,
     fontSize: 14,
   },
-  card: { // Card styles definition
+  card: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 16,
@@ -333,6 +529,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
     marginBottom: 10,
   },
   bigPercent: {
@@ -397,23 +594,115 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 4,
   },
-  h: { // Heading text styles definition
-    fontWeight: '700',
-    marginBottom: 4,
-    color: COLORS.textPrimary,
+  extraInfoText: {
+    color: '#e5e7eb',
+    fontSize: 16,
   },
-  btn: { // Button styles definition
+  histogramWrap: {
+    marginTop: 16,
+  },
+  popularTimesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
+  },
+  popularTimesTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  popularTimesDay: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  popularTimesChart: {
+    position: 'relative',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#343434',
+    backgroundColor: '#181818',
+    paddingTop: 14,
+    paddingBottom: 12,
+    paddingHorizontal: 10,
+  },
+  popularTimesBaseline: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    bottom: 34,
+    height: 1,
+    backgroundColor: '#2f2f2f',
+  },
+  popularTimesRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  popularTimesBarGroup: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+  },
+  popularTimesTrack: {
+    height: POPULAR_TIMES_BAR_HEIGHT,
+    width: '100%',
+    justifyContent: 'flex-end',
+  },
+  popularTimesFill: {
+    width: '100%',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  popularTimesFillBase: {
+    backgroundColor: '#5b5b5b',
+  },
+  popularTimesFillPeak: {
+    backgroundColor: '#d8d8d8',
+  },
+  popularTimesFillCurrent: {
+    backgroundColor: '#f1c232',
+    borderWidth: 1,
+    borderColor: '#ffe599',
+  },
+  popularTimesFillCurrentCustom: {
+    borderWidth: 1,
+    borderColor: '#ffffff',
+  },
+  popularTimesNowLabel: {
+    marginBottom: 8,
+    color: '#ffe599',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  popularTimesNowLabelHidden: {
+    color: 'transparent',
+  },
+  popularTimesLabel: {
+    marginTop: 8,
+    color: COLORS.textSecondary,
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  popularTimesLabelCurrent: {
+    color: '#ffe599',
+    fontWeight: '700',
+  },
+  popularTimesLabelHidden: {
+    color: 'transparent',
+  },
+  btn: {
     backgroundColor: COLORS.accent,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
     alignSelf: 'flex-start',
   },
-  backBtn: {
-    backgroundColor: '#808080',
-    marginTop: 16,
-  },
-  btnText: { // Button text styles definition
+  btnText: {
     color: '#fff',
     fontWeight: '700',
   },
