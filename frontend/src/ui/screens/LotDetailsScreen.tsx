@@ -30,6 +30,7 @@ const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
 const STACKED_LAYOUT_BREAKPOINT = 1080;
 const CONDENSED_LABEL_BREAKPOINT = 780;
+const DETAILS_HEADER_SLOT_HEIGHT = 74;
 const POPULAR_TIMES_HOURS = [
   '7AM',
   '8AM',
@@ -298,6 +299,17 @@ export default function LotDetailsScreen() {
       : null;
   const percentLabel = percentFull != null ? `${percentFull.toFixed(1)}% full` : '--';
   const currentPopularTimesHour = getCurrentPopularTimesHour(new Date(currentTimestamp));
+  const displayedPopularTimesProfile = useMemo(
+    () =>
+      POPULAR_TIMES_PROFILE.map((bar) => ({
+        ...bar,
+        busynessPercent:
+          currentPopularTimesHour === bar.hour && percentFull != null
+            ? percentFull
+            : bar.busynessPercent,
+      })),
+    [currentPopularTimesHour, percentFull]
+  );
 
   let statusChip = statusText.loading;
 
@@ -341,8 +353,10 @@ export default function LotDetailsScreen() {
     >
       <View style={[styles.contentRow, isStackedLayout && styles.contentRowStacked]}>
         <View style={[styles.leftPane, isStackedLayout && styles.leftPaneStacked]}>
-          <Text style={styles.lotTitle}>{lot.name}</Text>
-          <Text style={styles.sub}>{text.capacitySubtitle}</Text>
+          <View style={styles.detailsHeaderSlot}>
+            <Text style={styles.lotTitle}>{lot.name}</Text>
+            <Text style={styles.sub}>{text.capacitySubtitle}</Text>
+          </View>
 
           <View style={styles.card}>
             <View style={styles.bigRow}>
@@ -395,17 +409,7 @@ export default function LotDetailsScreen() {
 
           <View style={styles.histogramWrap}>
             <PopularTimesSection
-              bars={useMemo(
-                () =>
-                  POPULAR_TIMES_PROFILE.map((bar) => ({
-                    ...bar,
-                    busynessPercent:
-                      currentPopularTimesHour === bar.hour && percentFull != null
-                        ? percentFull
-                        : bar.busynessPercent,
-                  })),
-                [currentPopularTimesHour, percentFull]
-              )}
+              bars={displayedPopularTimesProfile}
               title={text.popularTimes}
               dayLabel={text.typicalWeekday}
               condensedLabels={shouldCondenseHistogramLabels}
@@ -417,6 +421,7 @@ export default function LotDetailsScreen() {
         </View>
 
         <View style={[styles.rightPane, isStackedLayout && styles.rightPaneStacked]}>
+          {!isStackedLayout ? <View style={styles.detailsHeaderSpacer} /> : null}
           <View style={[styles.card, styles.mapCard]}>
             <View style={styles.mapOuter}>
               <View style={styles.mapInner}>
@@ -469,7 +474,7 @@ const styles = StyleSheet.create({
   rightPane: {
     flex: 1,
     minWidth: 0,
-    padding: 12,
+    padding: 16,
     marginLeft: 8,
     alignItems: 'stretch',
     justifyContent: 'flex-start',
@@ -484,6 +489,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
     padding: 24,
+  },
+  detailsHeaderSlot: {
+    height: DETAILS_HEADER_SLOT_HEIGHT,
+  },
+  detailsHeaderSpacer: {
+    height: DETAILS_HEADER_SLOT_HEIGHT,
   },
   mapOuter: {
     width: '100%',
@@ -503,12 +514,13 @@ const styles = StyleSheet.create({
   lotTitle: {
     fontSize: 28,
     fontWeight: '800',
+    lineHeight: 34,
     marginBottom: 6,
     color: COLORS.textPrimary,
   },
   sub: {
     color: COLORS.textSecondary,
-    marginBottom: 16,
+    lineHeight: 18,
     fontSize: 14,
   },
   card: {
@@ -523,7 +535,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   mapCard: {
-    padding: 8,
+    padding: 16,
   },
   bigRow: {
     flexDirection: 'row',
