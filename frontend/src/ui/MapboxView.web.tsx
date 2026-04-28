@@ -39,6 +39,7 @@ type MapboxViewProps = {
   };
   markers?: MapboxMarker[];
   onMarkerPress?: (id: number) => void;
+  onMapPress?: (coordinate: [number, number]) => void;
   lotFullnessById?: Record<string, number>;
 };
 
@@ -107,6 +108,7 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
       bounds,
       markers,
       onMarkerPress,
+      onMapPress,
       lotFullnessById,
     },
     ref
@@ -215,12 +217,19 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
         });
       }
       const onLotClick = (event: mapboxgl.MapLayerMouseEvent) => {
+        if (onMapPress) {
+          onMapPress([event.lngLat.lng, event.lngLat.lat]);
+          return;
+        }
         const feature = event.features?.[0];
         const rawLotId = feature?.properties?.lot_id;
         const lotId = typeof rawLotId === 'number' ? rawLotId : Number(rawLotId);
         if (Number.isFinite(lotId) && lotId >= 0) {
           onMarkerPress?.(lotId);
         }
+      };
+      const onMapClick = (event: { lngLat: { lng: number; lat: number } }) => {
+        onMapPress?.([event.lngLat.lng, event.lngLat.lat]);
       };
       const hidePopup = () => {
         lotPopupRef.current?.remove();
@@ -249,26 +258,34 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
         if (!interactive || isHoveringMarkerRef.current) {
           return;
         }
-        map.getCanvas().style.cursor = 'pointer';
+        const canvas = map.getCanvas();
+        if (canvas) {
+          canvas.style.cursor = 'pointer';
+        }
       };
       const clearPointerCursor = () => {
-        map.getCanvas().style.cursor = '';
+        const canvas = map.getCanvas();
+        if (canvas) {
+          canvas.style.cursor = '';
+        }
       };
 
       map.on('click', GEOJSON_FILL_LAYER_ID, onLotClick);
+      map.on('click', onMapClick);
       map.on('mousemove', GEOJSON_FILL_LAYER_ID, onLotMouseMove);
       map.on('mouseenter', GEOJSON_FILL_LAYER_ID, setPointerCursor);
       map.on('mouseleave', GEOJSON_FILL_LAYER_ID, onLotMouseLeave);
 
       return () => {
         map.off('click', GEOJSON_FILL_LAYER_ID, onLotClick);
+        map.off('click', onMapClick);
         map.off('mousemove', GEOJSON_FILL_LAYER_ID, onLotMouseMove);
         map.off('mouseenter', GEOJSON_FILL_LAYER_ID, setPointerCursor);
         map.off('mouseleave', GEOJSON_FILL_LAYER_ID, onLotMouseLeave);
         hidePopup();
         clearPointerCursor();
       };
-    }, [mapReady, onMarkerPress, interactive]);
+    }, [mapReady, onMarkerPress, onMapPress, interactive]);
 
     useEffect(() => {
       if (!mapReady || !mapRef.current) return;

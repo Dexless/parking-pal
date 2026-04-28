@@ -5,11 +5,11 @@ import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../RootNavigator';
 import { COLORS } from './colors';
-import MapboxView, { MapboxViewHandle, type MapboxMarker } from '../MapboxView';
+import MapboxView, { type MapboxMarker } from '../MapboxView';
 import { useAuth } from '../AuthContext';
 import { useVehicleEventNotification } from '../VehicleEventNotification';
+import { findLotContainingCoordinate } from '../mapLotGeoJson';
 import {
-  deleteVehiclePin,
   fetchLotFullnessPercentages,
   fetchVehiclePin,
   simulateVehicleEvent,
@@ -19,7 +19,6 @@ import {
 
 const CAMPUS_CENTER: [number, number] = [-119.7487, 36.8123];
 const CAMPUS_ZOOM = 16.2;
-const PIN_AIM_VERTICAL_OFFSET_PX = -10;
 const CAMPUS_BOUNDS = {
   sw: [-119.754337, 36.808416] as [number, number],
   ne: [-119.741531, 36.817459] as [number, number],
@@ -48,13 +47,13 @@ export default function MapScreen() {
   const isFocused = useIsFocused();
   const { hideVehicleEventNotification, showVehicleEventNotification } =
     useVehicleEventNotification();
-  const { loggedIn, userId } = useAuth();
-  const mapRef = useRef<MapboxViewHandle>(null);
+  const { isAdmin, loggedIn, userId } = useAuth();
+  const savingPinRef = useRef(false);
   const [lotFullnessById, setLotFullnessById] = useState<Record<string, number>>({});
   const [vehiclePin, setVehiclePin] = useState<VehiclePin | null>(null);
   const [pinBusy, setPinBusy] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
-  const [isAimingPin, setIsAimingPin] = useState(false);
+  const [isPlacingPin, setIsPlacingPin] = useState(false);
 
   const vehicleMarkers = useMemo<MapboxMarker[]>(() => {
     if (!vehiclePin) {
@@ -78,6 +77,7 @@ export default function MapScreen() {
   const sidePanelWidth = 180;
   const stackedLayoutBreakpoint = 1020;
   const layoutScale = 0.8;
+  const hasDebugPanel = isAdmin;
   const isStackedLayout = width < stackedLayoutBreakpoint;
   const availableWidth = width - horizontalPadding;
   const availableHeight = height - verticalPadding;
@@ -85,7 +85,7 @@ export default function MapScreen() {
     availableWidth,
     Math.max(320, availableWidth * layoutScale)
   );
-  const maxWidth = isStackedLayout
+  const maxWidth = isStackedLayout || !hasDebugPanel
     ? contentWidth
     : Math.max(320, contentWidth - sidePanelWidth - panelGap);
   const maxHeight = Math.min(
@@ -178,7 +178,7 @@ export default function MapScreen() {
     if (!loggedIn || !userId) {
       setVehiclePin(null);
       setPinError(null);
-      setIsAimingPin(false);
+      setIsPlacingPin(false);
       return;
     }
 
@@ -203,45 +203,42 @@ export default function MapScreen() {
     };
   }, [loggedIn, userId]);
 
-  const setPinLabel = !loggedIn
-    ? 'Login to Set Vehicle Pin'
-    : isAimingPin
-      ? 'Save Vehicle Pin Here'
+  const pinControlLabel = pinBusy
+    ? 'Saving...'
+    : isPlacingPin
+      ? 'Tap map'
       : vehiclePin
-        ? 'Aim + Update Vehicle Pin'
-        : 'Aim + Set Vehicle Pin';
+        ? 'Reset Pin'
+        : 'Place Pin';
 
-  function onAimVehiclePin() {
+  function onStartPinPlacement() {
     if (!loggedIn || !userId) {
       navigation.navigate('Login');
       return;
     }
     setPinError(null);
-    setIsAimingPin(true);
+    setIsPlacingPin(true);
   }
 
-  async function onSetVehiclePin() {
+  async function onPlacePinAtCoordinate([lon, lat]: [number, number]) {
+    if (!isPlacingPin || pinBusy || savingPinRef.current) {
+      return;
+    }
+
     if (!loggedIn || !userId) {
       navigation.navigate('Login');
       return;
     }
 
-    const center =
-      (await mapRef.current?.getAimCoordinate(PIN_AIM_VERTICAL_OFFSET_PX)) ??
-      (await mapRef.current?.getCenter());
-    if (!center) {
-      setPinError('Unable to read map center.');
-      return;
-    }
-
-    const [lon, lat] = center;
+    savingPinRef.current = true;
     setPinBusy(true);
     setPinError(null);
 
     try {
-      const pin = await upsertVehiclePin(userId, lat, lon);
+      const currentLot = findLotContainingCoordinate([lon, lat])?.lotName ?? null;
+      const pin = await upsertVehiclePin(userId, lat, lon, currentLot);
       setVehiclePin(pin);
-      setIsAimingPin(false);
+      setIsPlacingPin(false);
     } catch (error) {
       if (error instanceof Error) {
         setPinError(error.message);
@@ -249,28 +246,7 @@ export default function MapScreen() {
         setPinError('Failed to save vehicle pin.');
       }
     } finally {
-      setPinBusy(false);
-    }
-  }
-
-  async function onDeleteVehiclePin() {
-    if (!userId) {
-      return;
-    }
-
-    setPinBusy(true);
-    setPinError(null);
-
-    try {
-      await deleteVehiclePin(userId);
-      setVehiclePin(null);
-    } catch (error) {
-      if (error instanceof Error) {
-        setPinError(error.message);
-      } else {
-        setPinError('Failed to delete vehicle pin.');
-      }
-    } finally {
+      savingPinRef.current = false;
       setPinBusy(false);
     }
   }
@@ -284,96 +260,65 @@ export default function MapScreen() {
               style={[styles.frame, { width: frameWidth, height: frameHeight }]}
             >
               <MapboxView
-                ref={mapRef}
                 style={StyleSheet.absoluteFillObject}
                 centerCoordinate={CAMPUS_CENTER}
                 zoomLevel={CAMPUS_ZOOM}
                 interactive
                 bounds={CAMPUS_BOUNDS}
                 lotFullnessById={lotFullnessById}
-                markers={isAimingPin ? [] : vehicleMarkers}
+                markers={isPlacingPin ? [] : vehicleMarkers}
+                onMapPress={isPlacingPin ? onPlacePinAtCoordinate : undefined}
                 onMarkerPress={(id) => {
+                  if (isPlacingPin) {
+                    return;
+                  }
                   if (id >= 0) {
                     navigation.navigate('LotDetails', { lotId: id });
                   }
                 }}
               />
-              {isAimingPin ? (
-                <View pointerEvents="none" style={styles.aimPinOverlay}>
-                  <View style={styles.aimPinBadge}>
-                    <View style={styles.aimPinDot} />
-                  </View>
-                  <View style={styles.aimPinStem} />
-                </View>
-              ) : null}
-            </View>
-          </View>
-          <Pressable
-            style={[styles.resetBtn, pinBusy && styles.buttonDisabled]}
-            onPress={() => mapRef.current?.reset()}
-            disabled={pinBusy}
-          >
-            <Text style={styles.resetBtnText}>Reset View</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.vehiclePinBtn, pinBusy && styles.buttonDisabled]}
-            onPress={isAimingPin ? onSetVehiclePin : onAimVehiclePin}
-            disabled={pinBusy}
-          >
-            <Text style={styles.resetBtnText}>
-              {pinBusy ? 'Working...' : setPinLabel}
-            </Text>
-          </Pressable>
-          {isAimingPin ? (
-            <Pressable
-              style={[styles.resetBtn, pinBusy && styles.buttonDisabled]}
-              onPress={() => setIsAimingPin(false)}
-              disabled={pinBusy}
-            >
-              <Text style={styles.resetBtnText}>Cancel Pin Aim</Text>
-            </Pressable>
-          ) : null}
-          {loggedIn && vehiclePin ? (
-            <Pressable
-              style={[styles.deletePinBtn, pinBusy && styles.buttonDisabled]}
-              onPress={onDeleteVehiclePin}
-              disabled={pinBusy}
-            >
-              <Text style={styles.resetBtnText}>Delete Vehicle Pin</Text>
-            </Pressable>
-          ) : null}
-          {vehiclePin ? (
-            <Text style={styles.pinMetaText}>
-              Lat: {vehiclePin.lat.toFixed(5)} Lon: {vehiclePin.lon.toFixed(5)}
-            </Text>
-          ) : null}
-          {isAimingPin ? (
-            <Text style={styles.pinMetaText}>Drag the map, then tap Save Vehicle Pin Here.</Text>
-          ) : null}
-          {pinError ? <Text style={styles.pinErrorText}>{pinError}</Text> : null}
-        </View>
-        <View
-          style={[
-            styles.rightColumn,
-            { width: isStackedLayout ? frameWidth : sidePanelWidth },
-            isStackedLayout && styles.rightColumnStacked,
-          ]}
-        >
-          <View style={styles.debugPanel}>
-            <Text style={styles.debugTitle}>Debug: Lots</Text>
-            <View style={styles.debugRow}>
-              {LOTS.map(({ id, name }) => (
+              <View pointerEvents="box-none" style={styles.mapToolOverlay}>
                 <Pressable
-                  key={id}
-                  style={styles.debugBtn}
-                  onPress={() => navigation.navigate('LotDetails', { lotId: id })}
+                  style={({ hovered, pressed }) => [
+                    styles.pinToolBtn,
+                    (hovered || pressed || isPlacingPin) && styles.pinToolBtnActive,
+                    (pinBusy || isPlacingPin) && styles.pinToolBtnLocked,
+                  ]}
+                  onPress={onStartPinPlacement}
+                  disabled={pinBusy || isPlacingPin}
                 >
-                  <Text style={styles.debugBtnText}>{name}</Text>
+                  <Text style={styles.pinToolIcon}>P</Text>
+                  <Text style={styles.pinToolText}>{pinControlLabel}</Text>
                 </Pressable>
-              ))}
+                {pinError ? <Text style={styles.pinErrorText}>{pinError}</Text> : null}
+              </View>
             </View>
           </View>
         </View>
+        {hasDebugPanel ? (
+          <View
+            style={[
+              styles.rightColumn,
+              { width: isStackedLayout ? frameWidth : sidePanelWidth },
+              isStackedLayout && styles.rightColumnStacked,
+            ]}
+          >
+            <View style={styles.debugPanel}>
+              <Text style={styles.debugTitle}>Debug: Lots</Text>
+              <View style={styles.debugRow}>
+                {LOTS.map(({ id, name }) => (
+                  <Pressable
+                    key={id}
+                    style={styles.debugBtn}
+                    onPress={() => navigation.navigate('LotDetails', { lotId: id })}
+                  >
+                    <Text style={styles.debugBtnText}>{name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -426,87 +371,67 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 8,
   },
-  aimPinOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: PIN_AIM_VERTICAL_OFFSET_PX }],
+  mapToolOverlay: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    alignItems: 'flex-end',
+    maxWidth: 220,
   },
-  aimPinBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#fef3c7',
-    backgroundColor: '#e11d48',
+  pinToolBtn: {
+    minWidth: 112,
+    minHeight: 42,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: 'rgba(17, 24, 39, 0.68)',
+    borderWidth: 1,
+    borderColor: 'rgba(229, 231, 235, 0.28)',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    opacity: 0.82,
     shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
-  aimPinDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#fee2e2',
+  pinToolBtnActive: {
+    backgroundColor: 'rgba(31, 75, 53, 0.94)',
+    borderColor: '#66d19e',
+    opacity: 1,
   },
-  aimPinStem: {
-    marginTop: -1,
-    width: 2,
-    height: 14,
-    backgroundColor: '#fee2e2',
-    borderRadius: 1,
+  pinToolBtnLocked: {
+    opacity: 1,
   },
-  resetBtn: {
-    marginTop: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#2b2b2b',
-    borderWidth: 1,
-    borderColor: '#3d3d3d',
-    alignSelf: 'center',
+  pinToolIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#e11d48',
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 18,
+    textAlign: 'center',
+    overflow: 'hidden',
   },
-  vehiclePinBtn: {
-    marginTop: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#1f4b35',
-    borderWidth: 1,
-    borderColor: '#2f6f4f',
-    alignSelf: 'center',
-  },
-  deletePinBtn: {
-    marginTop: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#4b1f1f',
-    borderWidth: 1,
-    borderColor: '#7f2c2c',
-    alignSelf: 'center',
-  },
-  resetBtnText: {
+  pinToolText: {
     color: COLORS.textPrimary,
+    fontSize: 13,
     fontWeight: '600',
   },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  pinMetaText: {
-    marginTop: 8,
-    color: COLORS.textSecondary,
-    fontSize: 12,
-  },
   pinErrorText: {
-    marginTop: 8,
+    marginTop: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 7,
+    borderRadius: 6,
+    backgroundColor: 'rgba(17, 24, 39, 0.78)',
     color: '#f97373',
-    maxWidth: 280,
-    textAlign: 'center',
+    maxWidth: 220,
+    textAlign: 'right',
     fontSize: 12,
   },
   debugPanel: {

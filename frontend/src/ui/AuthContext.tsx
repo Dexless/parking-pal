@@ -5,6 +5,8 @@ type AuthContextValue = {
   setLoggedIn: (value: boolean) => void;
   userId: string | null;
   setUserId: (value: string | null) => void;
+  isAdmin: boolean;
+  setIsAdmin: (value: boolean) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -12,6 +14,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const value = useMemo(
     () => ({
@@ -19,8 +22,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoggedIn,
       userId,
       setUserId,
+      isAdmin,
+      setIsAdmin,
     }),
-    [loggedIn, userId]
+    [loggedIn, userId, isAdmin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

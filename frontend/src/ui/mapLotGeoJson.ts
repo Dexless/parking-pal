@@ -106,6 +106,83 @@ const colorForFullness = (percentFull: number | null): string => {
   return '#3d85c6';
 };
 
+const isPointOnSegment = (
+  [lng, lat]: [number, number],
+  [startLng, startLat]: Position,
+  [endLng, endLat]: Position
+): boolean => {
+  const cross =
+    (lat - Number(startLat)) * (Number(endLng) - Number(startLng)) -
+    (lng - Number(startLng)) * (Number(endLat) - Number(startLat));
+  if (Math.abs(cross) > 1e-10) return false;
+
+  const minLng = Math.min(Number(startLng), Number(endLng));
+  const maxLng = Math.max(Number(startLng), Number(endLng));
+  const minLat = Math.min(Number(startLat), Number(endLat));
+  const maxLat = Math.max(Number(startLat), Number(endLat));
+  return lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat;
+};
+
+const isPointInRing = (point: [number, number], ring: Position[]): boolean => {
+  const [lng, lat] = point;
+  let inside = false;
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const start = ring[j];
+    const end = ring[i];
+    const startLng = Number(start[0]);
+    const startLat = Number(start[1]);
+    const endLng = Number(end[0]);
+    const endLat = Number(end[1]);
+
+    if (
+      !Number.isFinite(startLng) ||
+      !Number.isFinite(startLat) ||
+      !Number.isFinite(endLng) ||
+      !Number.isFinite(endLat)
+    ) {
+      continue;
+    }
+
+    if (isPointOnSegment(point, start, end)) {
+      return true;
+    }
+
+    const intersects =
+      startLat > lat !== endLat > lat &&
+      lng < ((endLng - startLng) * (lat - startLat)) / (endLat - startLat) + startLng;
+    if (intersects) inside = !inside;
+  }
+
+  return inside;
+};
+
+export const findLotContainingCoordinate = (
+  coordinate: [number, number]
+): { lotId: number; lotName: string } | null => {
+  const [lng, lat] = coordinate;
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+    return null;
+  }
+
+  const raw = parseRawGeoJson();
+  for (const feature of raw.features) {
+    if (!feature?.geometry) continue;
+    const { lotId, lotName } = resolveLotIdentity(feature.properties);
+    const rawCoordinates =
+      feature.geometry.type === 'LineString'
+        ? feature.geometry.coordinates
+        : feature.geometry.coordinates[0];
+    const ring = closeRing(rawCoordinates as Position[]);
+    if (!ring.length) continue;
+    if (isPointInRing(coordinate, ring)) {
+      return { lotId, lotName };
+    }
+  }
+
+  return null;
+};
+
 export const buildLotPolygonGeoJson = (
   lotFullnessById?: Record<string, number>
 ): LotPolygonCollection => {

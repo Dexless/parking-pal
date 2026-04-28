@@ -28,6 +28,7 @@ type MapboxViewProps = {
   };
   markers?: MapboxMarker[];
   onMarkerPress?: (id: number) => void;
+  onMapPress?: (coordinate: [number, number]) => void;
   lotFullnessById?: Record<string, number>;
 };
 
@@ -42,6 +43,7 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
       bounds,
       markers,
       onMarkerPress,
+      onMapPress,
       lotFullnessById,
     },
     ref
@@ -53,6 +55,16 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
       () => buildLotPolygonGeoJson(lotFullnessById),
       [lotFullnessById]
     );
+    const getPointCoordinate = (geometry?: GeoJSON.Geometry | null): [number, number] | null => {
+      if (geometry?.type !== 'Point') {
+        return null;
+      }
+      const [lon, lat] = geometry.coordinates;
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+        return null;
+      }
+      return [lon, lat];
+    };
     const markerGeoJson = useMemo<GeoJSON.FeatureCollection>(() => {
       const features: GeoJSON.Feature[] = (markers ?? [])
         .filter(
@@ -155,6 +167,12 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
         pitchEnabled={interactive}
         rotateEnabled={interactive}
         pointerEvents={pointerEvents}
+        onPress={(event) => {
+          const coordinate = getPointCoordinate(event.geometry);
+          if (coordinate) {
+            onMapPress?.(coordinate);
+          }
+        }}
         onLayout={(event) => {
           const { width, height } = event.nativeEvent.layout;
           setMapSize({ width, height });
@@ -172,6 +190,12 @@ const MapboxView = forwardRef<MapboxViewHandle, MapboxViewProps>(
           id="parking-pal-geojson-source"
           shape={lotPolygonGeoJson}
           onPress={(event) => {
+            const lon = event.coordinates?.longitude;
+            const lat = event.coordinates?.latitude;
+            if (Number.isFinite(lon) && Number.isFinite(lat) && onMapPress) {
+              onMapPress([lon, lat]);
+              return;
+            }
             const feature = event.features?.[0] as { properties?: { lot_id?: number | string } } | undefined;
             const rawLotId = feature?.properties?.lot_id;
             const lotId = typeof rawLotId === 'number' ? rawLotId : Number(rawLotId);

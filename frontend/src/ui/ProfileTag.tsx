@@ -21,14 +21,26 @@ type Props<RouteName extends keyof RootStackParamList = keyof RootStackParamList
   variant?: 'overlay' | 'header';
 };
 
+const DEFAULT_FAVORITE_LOT = LOTS[0]?.name ?? 'P1';
+const KNOWN_LOT_NAMES = new Set(LOTS.map((lot) => lot.name));
+
+function normalizeFavoriteLot(favoriteLot?: string | null) {
+  if (!favoriteLot) {
+    return DEFAULT_FAVORITE_LOT;
+  }
+
+  const normalized = favoriteLot.trim().toUpperCase();
+  return KNOWN_LOT_NAMES.has(normalized) ? normalized : DEFAULT_FAVORITE_LOT;
+}
+
 export default function ProfileTag<RouteName extends keyof RootStackParamList>({
   navigation,
   variant = 'overlay',
 }: Props<RouteName>) {
-  const { loggedIn, setLoggedIn, userId, setUserId } = useAuth();
+  const { loggedIn, setIsAdmin, setLoggedIn, userId, setUserId } = useAuth();
   const [profileBadgeOpen, setProfileBadgeOpen] = useState(false);
   const [lotDropdownOpen, setLotDropdownOpen] = useState(false);
-  const [favoriteLot, setFavoriteLot] = useState(LOTS[0]?.name ?? 'P1');
+  const [favoriteLot, setFavoriteLot] = useState(DEFAULT_FAVORITE_LOT);
   const [profileUsername, setProfileUsername] = useState('');
   const [profileNotes, setProfileNotes] = useState('');
   const [profileBusy, setProfileBusy] = useState(false);
@@ -57,6 +69,7 @@ export default function ProfileTag<RouteName extends keyof RootStackParamList>({
     if (!loggedIn || !userId) {
       setProfileBadgeOpen(false);
       setLotDropdownOpen(false);
+      setFavoriteLot(DEFAULT_FAVORITE_LOT);
       setProfileUsername('');
       setProfileNotes('');
       setProfileBusy(false);
@@ -77,6 +90,7 @@ export default function ProfileTag<RouteName extends keyof RootStackParamList>({
         }
         setProfileUsername(profile.username);
         setProfileNotes(profile.notes);
+        setFavoriteLot(normalizeFavoriteLot(profile.favorite_lot));
       })
       .catch((error) => {
         if (!active) {
@@ -105,11 +119,18 @@ export default function ProfileTag<RouteName extends keyof RootStackParamList>({
     setProfileBusy(true);
     setProfileError(null);
     setProfileSuccess(null);
+    setLotDropdownOpen(false);
 
     try {
-      const profile = await upsertUserProfile(userId, profileUsername, profileNotes);
+      const profile = await upsertUserProfile(
+        userId,
+        profileUsername,
+        profileNotes,
+        favoriteLot
+      );
       setProfileUsername(profile.username);
       setProfileNotes(profile.notes);
+      setFavoriteLot(normalizeFavoriteLot(profile.favorite_lot));
       setProfileSuccess(text.profileSaved);
     } catch (error) {
       const message =
@@ -123,8 +144,10 @@ export default function ProfileTag<RouteName extends keyof RootStackParamList>({
   function onLogout() {
     setLoggedIn(false);
     setUserId(null);
+    setIsAdmin(false);
     setProfileBadgeOpen(false);
     setLotDropdownOpen(false);
+    setFavoriteLot(DEFAULT_FAVORITE_LOT);
     setProfileError(null);
     setProfileSuccess(null);
   }
@@ -178,8 +201,9 @@ export default function ProfileTag<RouteName extends keyof RootStackParamList>({
 
               <Text style={styles.badgeLabel}>{text.favoriteLot}</Text>
               <Pressable
-                style={styles.favoriteSelect}
+                style={[styles.favoriteSelect, profileBusy && styles.buttonDisabled]}
                 onPress={() => setLotDropdownOpen((prev) => !prev)}
+                disabled={profileBusy}
               >
                 <Text style={styles.favoriteSelectText}>{favoriteLot}</Text>
                 <Text style={styles.favoriteChevron}>{lotDropdownOpen ? '^' : 'v'}</Text>
@@ -193,9 +217,13 @@ export default function ProfileTag<RouteName extends keyof RootStackParamList>({
                         styles.favoriteOption,
                         favoriteLot === lot.name && styles.favoriteOptionActive,
                       ]}
+                      disabled={profileBusy}
                       onPress={() => {
                         setFavoriteLot(lot.name);
                         setLotDropdownOpen(false);
+                        if (profileSuccess) {
+                          setProfileSuccess(null);
+                        }
                       }}
                     >
                       <Text style={styles.favoriteOptionText}>{lot.name}</Text>

@@ -2,19 +2,41 @@ from typing import Optional
 from uuid import UUID
 
 import lot_helper as lh
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+FAVORITE_LOT_DEFAULT = "P1"
+VALID_FAVORITE_LOTS = frozenset(lh.lot_dict().values())
+
+
+def normalize_favorite_lot(favorite_lot: Optional[str]) -> str:
+    if favorite_lot is None:
+        return FAVORITE_LOT_DEFAULT
+
+    normalized = favorite_lot.strip().upper()
+    if normalized in VALID_FAVORITE_LOTS:
+        return normalized
+
+    return FAVORITE_LOT_DEFAULT
 
 
 class VehiclePin(BaseModel):
     uuid: UUID
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
+    current_lot: Optional[str] = None
 
 
 class UserProfile(BaseModel):
     uuid: UUID
     username: str = ""
     notes: str = ""
+    favorite_lot: str = FAVORITE_LOT_DEFAULT
+
+    @field_validator("favorite_lot")
+    @classmethod
+    def validate_favorite_lot(cls, value: str) -> str:
+        return normalize_favorite_lot(value)
 
 
 def upsert_vehicle_pin(vehicle_pin: VehiclePin) -> VehiclePin:
@@ -23,13 +45,20 @@ def upsert_vehicle_pin(vehicle_pin: VehiclePin) -> VehiclePin:
     try:
         cursor.execute(
             """
-            INSERT INTO users (id, lat, lon, username, notes)
-            VALUES (%s::uuid, %s, %s, '', '')
+            INSERT INTO users (id, lat, lon, current_lot, username, notes, favorite_lot)
+            VALUES (%s::uuid, %s, %s, %s, '', '', %s)
             ON CONFLICT (id) DO UPDATE
             SET lat = EXCLUDED.lat,
-                lon = EXCLUDED.lon;
+                lon = EXCLUDED.lon,
+                current_lot = EXCLUDED.current_lot;
             """,
-            (str(vehicle_pin.uuid), vehicle_pin.lat, vehicle_pin.lon),
+            (
+                str(vehicle_pin.uuid),
+                vehicle_pin.lat,
+                vehicle_pin.lon,
+                vehicle_pin.current_lot,
+                FAVORITE_LOT_DEFAULT,
+            ),
         )
         connection.commit()
         return vehicle_pin
@@ -44,7 +73,7 @@ def fetch_vehicle_pin(user_uuid: UUID) -> Optional[VehiclePin]:
     try:
         cursor.execute(
             """
-            SELECT lat, lon
+            SELECT lat, lon, current_lot
             FROM users
             WHERE users.id = %s::uuid
               AND lat IS NOT NULL
@@ -56,7 +85,7 @@ def fetch_vehicle_pin(user_uuid: UUID) -> Optional[VehiclePin]:
         row = cursor.fetchone()
         if row is None:
             return None
-        return VehiclePin(uuid=user_uuid, lat=row[0], lon=row[1])
+        return VehiclePin(uuid=user_uuid, lat=row[0], lon=row[1], current_lot=row[2])
     finally:
         cursor.close()
         connection.close()
@@ -70,7 +99,8 @@ def delete_vehicle_pin(user_uuid: UUID) -> bool:
             """
             UPDATE users
             SET lat = NULL,
-                lon = NULL
+                lon = NULL,
+                current_lot = NULL
             WHERE users.id = %s::uuid;
             """,
             (str(user_uuid),),
@@ -88,17 +118,19 @@ def fetch_user_profile(user_uuid: UUID) -> UserProfile:
     try:
         cursor.execute(
             """
-            SELECT COALESCE(username, ''), COALESCE(notes, '')
+            SELECT COALESCE(username, ''),
+                   COALESCE(notes, ''),
+                   COALESCE(favorite_lot, %s)
             FROM users
             WHERE users.id = %s::uuid
             LIMIT 1;
             """,
-            (str(user_uuid),),
+            (FAVORITE_LOT_DEFAULT, str(user_uuid)),
         )
         row = cursor.fetchone()
         if row is None:
             return UserProfile(uuid=user_uuid, username="", notes="")
-        return UserProfile(uuid=user_uuid, username=row[0], notes=row[1])
+        return UserProfile(uuid=user_uuid, username=row[0], notes=row[1], favorite_lot=row[2])
     finally:
         cursor.close()
         connection.close()
@@ -110,17 +142,22 @@ def upsert_user_profile(user_profile: UserProfile) -> UserProfile:
     try:
         cursor.execute(
             """
-            INSERT INTO users (id, username, notes)
-            VALUES (%s::uuid, %s, %s)
+            INSERT INTO users (id, username, notes, favorite_lot)
+            VALUES (%s::uuid, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE
             SET username = EXCLUDED.username,
-                notes = EXCLUDED.notes
-            RETURNING COALESCE(username, ''), COALESCE(notes, '');
+                notes = EXCLUDED.notes,
+                favorite_lot = EXCLUDED.favorite_lot
+            RETURNING COALESCE(username, ''),
+                      COALESCE(notes, ''),
+                      COALESCE(favorite_lot, %s);
             """,
             (
                 str(user_profile.uuid),
                 user_profile.username.strip(),
                 user_profile.notes.strip(),
+                normalize_favorite_lot(user_profile.favorite_lot),
+                FAVORITE_LOT_DEFAULT,
             ),
         )
         row = cursor.fetchone()
@@ -130,8 +167,9 @@ def upsert_user_profile(user_profile: UserProfile) -> UserProfile:
                 uuid=user_profile.uuid,
                 username=user_profile.username.strip(),
                 notes=user_profile.notes.strip(),
+                favorite_lot=normalize_favorite_lot(user_profile.favorite_lot),
             )
-        return UserProfile(uuid=user_profile.uuid, username=row[0], notes=row[1])
+        return UserProfile(uuid=user_profile.uuid, username=row[0], notes=row[1], favorite_lot=row[2])
     finally:
         cursor.close()
         connection.close()

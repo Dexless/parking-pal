@@ -159,12 +159,14 @@ export interface VehiclePin {
   uuid: string;
   lat: number;
   lon: number;
+  current_lot: string | null;
 }
 
 export interface UserProfile {
   uuid: string;
   username: string;
   notes: string;
+  favorite_lot: string;
 }
 
 export async function fetchUserProfile(userUuid: string) {
@@ -174,12 +176,14 @@ export async function fetchUserProfile(userUuid: string) {
 export async function upsertUserProfile(
   userUuid: string,
   username: string,
-  notes: string
+  notes: string,
+  favoriteLot: string
 ) {
   return apiClient.post<UserProfile>("/profile", {
     uuid: userUuid,
     username,
     notes,
+    favorite_lot: favoriteLot,
   });
 }
 
@@ -198,11 +202,17 @@ export async function fetchVehiclePin(userUuid: string) {
   }
 }
 
-export async function upsertVehiclePin(userUuid: string, lat: number, lon: number) {
+export async function upsertVehiclePin(
+  userUuid: string,
+  lat: number,
+  lon: number,
+  currentLot: string | null
+) {
   return apiClient.post<VehiclePin>("/vehicle-pin", {
     uuid: userUuid,
     lat,
     lon,
+    current_lot: currentLot,
   });
 }
 
@@ -218,6 +228,12 @@ export interface LoginResponse {
   user: {
     id: string;
     email?: string;
+    app_metadata?: {
+      role?: string;
+    };
+    raw_app_meta_data?: {
+      role?: string;
+    };
   };
 }
 
